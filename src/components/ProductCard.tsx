@@ -1,0 +1,72 @@
+'use client'
+
+import { Product } from '../types'
+import { Button } from './ui/button'
+import { Card, CardContent, CardFooter } from './ui/card'
+import { Heart, ShoppingCart } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useShop } from '../context/ShopContext'
+import { toast } from 'sonner'
+import { ImageWithFallback } from './figma/ImageWithFallback'
+
+interface ProductCardProps {
+  product: Product
+}
+
+export function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter()
+  const { addToCart, wishlist, toggleWishlist } = useShop()
+
+  const isWishlisted = wishlist.includes(product.id)
+  const isOutOfStock = product.stock === 0
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (isOutOfStock) return
+    addToCart(product.id)
+    toast.success('장바구니에 추가되었습니다')
+  }
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleWishlist(product.id)
+    toast.success(isWishlisted ? '찜 목록에서 제거되었습니다' : '찜 목록에 추가되었습니다')
+  }
+
+  return (
+    <Card
+      className="cursor-pointer overflow-hidden transition-shadow hover:shadow-lg"
+      onClick={() => router.push(`/product/${product.id}`)}
+    >
+      <div className="relative aspect-square overflow-hidden bg-gray-100">
+        <ImageWithFallback src={product.image} alt={product.name} className="h-full w-full object-cover" />
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <span className="text-lg font-semibold text-white">품절</span>
+          </div>
+        )}
+        <button
+          onClick={handleToggleWishlist}
+          className="absolute right-2 top-2 rounded-full bg-white/80 p-2 transition-colors hover:bg-white"
+        >
+          <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+        </button>
+      </div>
+      <CardContent className="p-4">
+        <h3 className="mb-1 font-semibold">{product.name}</h3>
+        <p className="mb-2 line-clamp-1 text-sm text-gray-600">{product.description}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-lg font-semibold text-green-700">{product.price.toLocaleString()}원</p>
+          <p className="text-sm text-gray-500">재고: {product.stock}개</p>
+        </div>
+      </CardContent>
+      <CardFooter className="p-4 pt-0">
+        <Button className="w-full" onClick={handleAddToCart} disabled={isOutOfStock}>
+          <ShoppingCart className="mr-2 h-4 w-4" />
+          {isOutOfStock ? '품절' : '장바구니'}
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}

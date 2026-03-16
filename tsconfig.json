@@ -25,12 +25,11 @@
       "@/types/*": ["./src/types/*"],
       "@/components/*": ["./src/components/*"],
       "@/utils/*": ["./src/utils/*"],
-      "@/constants": ["./src/app/constants"],
-      "@/context/*": ["./src/app/context/*"],
-      "@/hooks/*": ["./src/app/hooks/*"],
+      "@/context/*": ["./src/context/*"],
+      "@/data/*": ["./src/data/*"],
+      "@/hooks/*": ["./src/hooks/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/api/*": ["./src/app/api/*"],
-      "@/styles/*": ["./src/app/styles/*"]
+      "@/api/*": ["./src/app/api/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
