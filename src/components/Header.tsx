@@ -65,30 +65,26 @@ export function Header() {
           {/* Desktop Navigation */}
           <div className="hidden items-center gap-4 md:flex">
             {user ? (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      <User className="h-4 w-4" />
-                      <span>{user.name}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => router.push('/mypage')}>마이페이지</DropdownMenuItem>
-                    {user.isAdmin && (
-                      <DropdownMenuItem onClick={() => router.push('/admin')}>관리자 페이지</DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      로그아웃
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium mr-2">{user.name}님 환영합니다</span>
+                {user.isAdmin && (
+                  <Button variant="outline" size="sm" onClick={() => router.push('/admin')}>
+                    관리자 페이지
+                  </Button>
+                )}
+                {!user.isAdmin && (
+                  <Button variant="ghost" size="sm" onClick={() => router.push('/mypage')}>
+                    마이페이지
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                  <LogOut className="mr-1 h-4 w-4" />
+                  로그아웃
+                </Button>
+              </div>
             ) : (
               <Button variant="ghost" size="sm" onClick={() => router.push('/login')}>
-                로그인
+                로그인 / 회원가입
               </Button>
             )}
 
@@ -148,13 +144,13 @@ export function Header() {
                           관리자 페이지
                         </Button>
                       )}
-                      <Button variant="ghost" className="justify-start" onClick={handleLogout}>
+                      <Button variant="ghost" className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         로그아웃
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={() => router.push('/login')}>로그인</Button>
+                    <Button onClick={() => router.push('/login')}>로그인 / 회원가입</Button>
                   )}
                 </div>
               </SheetContent>
