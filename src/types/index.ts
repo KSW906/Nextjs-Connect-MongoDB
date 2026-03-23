@@ -28,6 +28,24 @@ export interface CartItem {
   quantity: number
 }
 
+export interface CartActionResult {
+  success: boolean
+  message?: string
+  requiresLogin?: boolean
+}
+
+export interface ReviewActionResult {
+  success: boolean
+  message?: string
+  requiresLogin?: boolean
+}
+
+export interface WishlistActionResult {
+  success: boolean
+  message?: string
+  requiresLogin?: boolean
+}
+
 // Order Types
 export type OrderStatus = 'pending' | 'paid' | 'shipping' | 'delivered' | 'cancelled'
 export type PaymentMethod = 'card' | 'transfer' | 'kakaopay'
@@ -60,6 +78,7 @@ export interface Review {
   rating: number
   content: string
   createdAt: string
+  updatedAt?: string
 }
 
 // Sort Types

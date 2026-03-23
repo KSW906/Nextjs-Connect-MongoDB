@@ -4,9 +4,9 @@ import { Product } from '../types'
 import { Button } from './ui/button'
 import { Card, CardContent, CardFooter } from './ui/card'
 import { Heart, ShoppingCart } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useShop } from '../context/ShopContext'
+import { useAuth } from '../context/AuthContext'
 import { toast } from 'sonner'
 import { ImageWithFallback } from './figma/ImageWithFallback'
 
@@ -16,22 +16,45 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const { addToCart, wishlist, toggleWishlist } = useShop()
 
   const isWishlisted = wishlist.includes(product.id)
   const isOutOfStock = product.stock === 0
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (isOutOfStock) return
-    addToCart(product.id)
-    toast.success('장바구니에 추가되었습니다')
+
+    if (!user) {
+      toast.error('로그인한 사용자만 장바구니에 담을 수 있습니다.')
+      router.push('/login')
+      return
+    }
+
+    const result = await addToCart(product.id)
+    if (result.success) {
+      toast.success('장바구니에 추가했습니다.')
+    } else {
+      toast.error(result.message)
+    }
   }
 
-  const handleToggleWishlist = (e: React.MouseEvent) => {
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    toggleWishlist(product.id)
-    toast.success(isWishlisted ? '찜 목록에서 제거되었습니다' : '찜 목록에 추가되었습니다')
+
+    if (!user) {
+      toast.error('로그인한 사용자만 찜할 수 있습니다.')
+      router.push('/login')
+      return
+    }
+
+    const result = await toggleWishlist(product.id)
+    if (result.success) {
+      toast.success(isWishlisted ? '찜 목록에서 제거했습니다.' : '찜 목록에 추가했습니다.')
+    } else {
+      toast.error(result.message)
+    }
   }
 
   return (
@@ -47,7 +70,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
         <button
-          onClick={handleToggleWishlist}
+          onClick={(e) => void handleToggleWishlist(e)}
           className="absolute right-2 top-2 rounded-full bg-white/80 p-2 transition-colors hover:bg-white"
         >
           <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />

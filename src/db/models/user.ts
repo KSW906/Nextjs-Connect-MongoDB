@@ -3,7 +3,11 @@ import mongoose from 'mongoose'
 
 const UserSchema = new mongoose.Schema(
   {
-    email: { type: String, default: '' },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    isAdmin: { type: Boolean, default: false },
     nickname: { type: String, default: '' },
     profile_image_url: { type: String, default: '' },
     user_type: { type: String, default: '' },

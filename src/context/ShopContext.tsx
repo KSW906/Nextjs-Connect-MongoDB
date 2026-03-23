@@ -1,44 +1,81 @@
-'use client';
+'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { Product, CartItem, Order, Review } from '../types'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import {
+  Product,
+  CartItem,
+  Order,
+  Review,
+  CartActionResult,
+  ReviewActionResult,
+  WishlistActionResult,
+} from '../types'
 import { mockProducts } from '../data/mockProducts'
+import { useAuth } from './AuthContext'
 
 interface ShopContextType {
   products: Product[]
   cart: CartItem[]
+  isCartLoading: boolean
   wishlist: string[]
+  isWishlistLoading: boolean
   orders: Order[]
   reviews: Review[]
-  addToCart: (productId: string, quantity?: number) => void
-  removeFromCart: (productId: string) => void
-  updateCartQuantity: (productId: string, quantity: number) => void
-  clearCart: () => void
-  toggleWishlist: (productId: string) => void
+  addToCart: (productId: string, quantity?: number) => Promise<CartActionResult>
+  removeFromCart: (productId: string) => Promise<CartActionResult>
+  updateCartQuantity: (productId: string, quantity: number) => Promise<CartActionResult>
+  clearCart: () => Promise<CartActionResult>
+  toggleWishlist: (productId: string) => Promise<WishlistActionResult>
   createOrder: (order: Omit<Order, 'id' | 'createdAt'>) => string
   cancelOrder: (orderId: string) => boolean
   updateOrderStatus: (orderId: string, status: Order['status']) => void
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void
   updateProduct: (id: string, updates: Partial<Product>) => void
   deleteProduct: (id: string) => void
-  addReview: (review: Omit<Review, 'id' | 'createdAt'>) => void
-  updateReview: (id: string, content: string, rating: number) => void
-  deleteReview: (id: string) => void
+  addReview: (review: Omit<Review, 'id' | 'createdAt' | 'updatedAt' | 'userName'>) => Promise<ReviewActionResult>
+  updateReview: (id: string, content: string, rating: number) => Promise<ReviewActionResult>
+  deleteReview: (id: string) => Promise<ReviewActionResult>
   getCartTotal: () => number
   getProductById: (id: string) => Product | undefined
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined)
 
+function cartLoginRequired(): CartActionResult {
+  return {
+    success: false,
+    message: '로그인이 필요합니다.',
+    requiresLogin: true,
+  }
+}
+
+function reviewLoginRequired(): ReviewActionResult {
+  return {
+    success: false,
+    message: '로그인이 필요합니다.',
+    requiresLogin: true,
+  }
+}
+
+function wishlistLoginRequired(): WishlistActionResult {
+  return {
+    success: false,
+    message: '로그인이 필요합니다.',
+    requiresLogin: true,
+  }
+}
+
 export function ShopProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
+  const [isCartLoading, setIsCartLoading] = useState(false)
   const [wishlist, setWishlist] = useState<string[]>([])
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false)
   const [orders, setOrders] = useState<Order[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Initialize data from localStorage
   useEffect(() => {
     const savedProducts = localStorage.getItem('products')
     try {
@@ -49,76 +86,205 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         setProducts(mockProducts)
         localStorage.setItem('products', JSON.stringify(mockProducts))
       }
-    } catch (e) {
+    } catch {
       setProducts(mockProducts)
     }
-
-    const savedCart = localStorage.getItem('cart')
-    if (savedCart) setCart(JSON.parse(savedCart))
-
-    const savedWishlist = localStorage.getItem('wishlist')
-    if (savedWishlist) setWishlist(JSON.parse(savedWishlist))
 
     const savedOrders = localStorage.getItem('orders')
     if (savedOrders) setOrders(JSON.parse(savedOrders))
 
-    const savedReviews = localStorage.getItem('reviews')
-    if (savedReviews) setReviews(JSON.parse(savedReviews))
-
     setIsInitialized(true)
   }, [])
 
-  // Save to localStorage whenever state changes
   useEffect(() => {
     if (isInitialized) localStorage.setItem('products', JSON.stringify(products))
   }, [products, isInitialized])
-
-  useEffect(() => {
-    if (isInitialized) localStorage.setItem('cart', JSON.stringify(cart))
-  }, [cart, isInitialized])
-
-  useEffect(() => {
-    if (isInitialized) localStorage.setItem('wishlist', JSON.stringify(wishlist))
-  }, [wishlist, isInitialized])
 
   useEffect(() => {
     if (isInitialized) localStorage.setItem('orders', JSON.stringify(orders))
   }, [orders, isInitialized])
 
   useEffect(() => {
-    if (isInitialized) localStorage.setItem('reviews', JSON.stringify(reviews))
-  }, [reviews, isInitialized])
+    if (!isInitialized) return
 
-  const addToCart = (productId: string, quantity: number = 1) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.productId === productId)
-      if (existing) {
-        return prev.map((item) =>
-          item.productId === productId ? { ...item, quantity: item.quantity + quantity } : item
-        )
+    const loadReviews = async () => {
+      try {
+        const response = await fetch('/api/reviews')
+        const data = await response.json()
+        if (response.ok && data.success) {
+          setReviews(Array.isArray(data.reviews) ? data.reviews : [])
+        }
+      } catch {
+        setReviews([])
       }
-      return [...prev, { productId, quantity }]
-    })
-  }
+    }
 
-  const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.productId !== productId))
-  }
+    void loadReviews()
+  }, [isInitialized, user?.id])
 
-  const updateCartQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId)
+  useEffect(() => {
+    if (!isInitialized) return
+
+    if (!user) {
+      setCart([])
+      setIsCartLoading(false)
+      setWishlist([])
+      setIsWishlistLoading(false)
       return
     }
-    setCart((prev) => prev.map((item) => (item.productId === productId ? { ...item, quantity } : item)))
+
+    const loadCart = async () => {
+      setIsCartLoading(true)
+      try {
+        const response = await fetch('/api/cart')
+        const data = await response.json()
+
+        if (response.ok && data.success) {
+          setCart(Array.isArray(data.items) ? data.items : [])
+        } else {
+          setCart([])
+        }
+      } catch {
+        setCart([])
+      } finally {
+        setIsCartLoading(false)
+      }
+    }
+
+    const loadWishlist = async () => {
+      setIsWishlistLoading(true)
+      try {
+        const response = await fetch('/api/wishlist')
+        const data = await response.json()
+        if (response.ok && data.success) {
+          setWishlist(Array.isArray(data.productIds) ? data.productIds : [])
+        } else {
+          setWishlist([])
+        }
+      } catch {
+        setWishlist([])
+      } finally {
+        setIsWishlistLoading(false)
+      }
+    }
+
+    void loadCart()
+    void loadWishlist()
+  }, [isInitialized, user])
+
+  const addToCart = async (productId: string, quantity: number = 1): Promise<CartActionResult> => {
+    if (!user) return cartLoginRequired()
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || '장바구니에 추가하지 못했습니다.' }
+      }
+
+      setCart(Array.isArray(data.items) ? data.items : [])
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
   }
 
-  const clearCart = () => {
-    setCart([])
+  const removeFromCart = async (productId: string): Promise<CartActionResult> => {
+    if (!user) return cartLoginRequired()
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || '장바구니에서 삭제하지 못했습니다.' }
+      }
+
+      setCart(Array.isArray(data.items) ? data.items : [])
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
   }
 
-  const toggleWishlist = (productId: string) => {
-    setWishlist((prev) => (prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]))
+  const updateCartQuantity = async (productId: string, quantity: number): Promise<CartActionResult> => {
+    if (!user) return cartLoginRequired()
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || '수량을 변경하지 못했습니다.' }
+      }
+
+      setCart(Array.isArray(data.items) ? data.items : [])
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
+  }
+
+  const clearCart = async (): Promise<CartActionResult> => {
+    if (!user) return cartLoginRequired()
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || '장바구니를 비우지 못했습니다.' }
+      }
+
+      setCart(Array.isArray(data.items) ? data.items : [])
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
+  }
+
+  const toggleWishlist = async (productId: string): Promise<WishlistActionResult> => {
+    if (!user) return wishlistLoginRequired()
+
+    const isWishlisted = wishlist.includes(productId)
+
+    try {
+      const response = await fetch('/api/wishlist', {
+        method: isWishlisted ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return {
+          success: false,
+          message: data.message || (isWishlisted ? '찜 목록에서 제거하지 못했습니다.' : '찜 목록에 추가하지 못했습니다.'),
+        }
+      }
+
+      setWishlist(Array.isArray(data.productIds) ? data.productIds : [])
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
   }
 
   const createOrder = (orderData: Omit<Order, 'id' | 'createdAt'>): string => {
@@ -161,21 +327,72 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     setProducts((prev) => prev.filter((p) => p.id !== id))
   }
 
-  const addReview = (reviewData: Omit<Review, 'id' | 'createdAt'>) => {
-    const newReview: Review = {
-      ...reviewData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
+  const addReview = async (
+    reviewData: Omit<Review, 'id' | 'createdAt' | 'updatedAt' | 'userName'>
+  ): Promise<ReviewActionResult> => {
+    if (!user) return reviewLoginRequired()
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success || !data.review) {
+        return { success: false, message: data.message || '리뷰를 등록하지 못했습니다.' }
+      }
+
+      setReviews((prev) => [data.review, ...prev])
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
     }
-    setReviews((prev) => [newReview, ...prev])
   }
 
-  const updateReview = (id: string, content: string, rating: number) => {
-    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, content, rating } : r)))
+  const updateReview = async (id: string, content: string, rating: number): Promise<ReviewActionResult> => {
+    if (!user) return reviewLoginRequired()
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, content, rating }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success || !data.review) {
+        return { success: false, message: data.message || '리뷰를 수정하지 못했습니다.' }
+      }
+
+      setReviews((prev) => prev.map((review) => (review.id === id ? data.review : review)))
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
   }
 
-  const deleteReview = (id: string) => {
-    setReviews((prev) => prev.filter((r) => r.id !== id))
+  const deleteReview = async (id: string): Promise<ReviewActionResult> => {
+    if (!user) return reviewLoginRequired()
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || '리뷰를 삭제하지 못했습니다.' }
+      }
+
+      setReviews((prev) => prev.filter((review) => review.id !== id))
+      return { success: true }
+    } catch {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
   }
 
   const getCartTotal = (): number => {
@@ -194,7 +411,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       value={{
         products,
         cart,
+        isCartLoading,
         wishlist,
+        isWishlistLoading,
         orders,
         reviews,
         addToCart,

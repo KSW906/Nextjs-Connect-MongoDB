@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useShop } from '@/context/ShopContext'
@@ -11,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Heart, Package, MessageSquare, User as UserIcon, Trash2, Leaf } from 'lucide-react'
+import { Heart, Package, MessageSquare, User as UserIcon, Trash2, Leaf, Star } from 'lucide-react'
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback'
+import { Textarea } from '@/components/ui/textarea'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,13 +28,18 @@ import {
 
 export default function MyPage() {
   const router = useRouter()
-  const { user, updateUser, deleteAccount, logout } = useAuth()
-  const { orders, products, wishlist, toggleWishlist, cancelOrder, reviews, addToCart } = useShop()
+  const { user, updateUser, deleteAccount } = useAuth()
+  const { orders, products, wishlist, toggleWishlist, cancelOrder, reviews, addToCart, updateReview, deleteReview } =
+    useShop()
 
   const [name, setName] = useState(user?.name || '')
   const [phone, setPhone] = useState(user?.phone || '')
   const [newPassword, setNewPassword] = useState('')
-  const [deletePassword, setDeletePassword] = useState('')
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
+  const [editingReviewContent, setEditingReviewContent] = useState('')
+  const [editingReviewRating, setEditingReviewRating] = useState(5)
+  const [isSavingReview, setIsSavingReview] = useState(false)
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -59,30 +65,29 @@ export default function MyPage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    const updates: any = { name, phone }
+
+    if (!name.trim() || !phone.trim()) {
+      toast.error('이름과 연락처를 입력해 주세요.')
+      return
+    }
 
     if (newPassword) {
       if (newPassword.length < 8) {
-        toast.error('비밀번호는 8자 이상이어야 합니다')
+        toast.error('비밀번호는 8자 이상이어야 합니다.')
         return
       }
       if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]/.test(newPassword)) {
-        toast.error('비밀번호는 영문과 숫자 조합이어야 합니다')
+        toast.error('비밀번호는 영문과 숫자를 포함해야 합니다.')
         return
-      }
-
-      const usersStr = localStorage.getItem('users')
-      const users = usersStr ? JSON.parse(usersStr) : []
-      const userIndex = users.findIndex((u: any) => u.id === user.id)
-      if (userIndex !== -1) {
-        users[userIndex].password = newPassword
-        localStorage.setItem('users', JSON.stringify(users))
       }
     }
 
+    const updates: { name: string; phone: string; password?: string } = { name, phone }
+    if (newPassword) updates.password = newPassword
+
     const result = await updateUser(updates)
     if (result.success) {
-      toast.success('회원정보가 수정되었습니다')
+      toast.success('회원정보를 수정했습니다.')
       setNewPassword('')
     } else {
       toast.error(result.message)
@@ -90,9 +95,9 @@ export default function MyPage() {
   }
 
   const handleDeleteAccount = async () => {
-    const result = await deleteAccount(deletePassword)
+    const result = await deleteAccount()
     if (result.success) {
-      toast.success('계정이 삭제되었습니다')
+      toast.success('계정을 삭제했습니다.')
       router.push('/')
     } else {
       toast.error(result.message)
@@ -102,14 +107,68 @@ export default function MyPage() {
   const handleCancelOrder = (orderId: string) => {
     const success = cancelOrder(orderId)
     if (success) {
-      toast.success('주문이 취소되었습니다')
+      toast.success('주문을 취소했습니다.')
     } else {
-      toast.error('배송 중이거나 완료된 주문은 취소할 수 없습니다')
+      toast.error('배송 중이거나 완료된 주문은 취소할 수 없습니다.')
+    }
+  }
+
+  const handleStartEditReview = (review: { id: string; content: string; rating: number }) => {
+    setEditingReviewId(review.id)
+    setEditingReviewContent(review.content)
+    setEditingReviewRating(review.rating)
+  }
+
+  const resetReviewEdit = () => {
+    setEditingReviewId(null)
+    setEditingReviewContent('')
+    setEditingReviewRating(5)
+  }
+
+  const handleSaveReview = async () => {
+    if (!editingReviewId) return
+    if (!editingReviewContent.trim()) {
+      toast.error('리뷰 내용을 입력해 주세요.')
+      return
+    }
+
+    setIsSavingReview(true)
+    try {
+      const result = await updateReview(editingReviewId, editingReviewContent, editingReviewRating)
+      if (result.success) {
+        toast.success('리뷰를 수정했습니다.')
+        resetReviewEdit()
+      } else {
+        toast.error(result.message)
+      }
+    } finally {
+      setIsSavingReview(false)
+    }
+  }
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('이 리뷰를 삭제할까요?')) {
+      return
+    }
+
+    setDeletingReviewId(reviewId)
+    try {
+      const result = await deleteReview(reviewId)
+      if (result.success) {
+        if (editingReviewId === reviewId) {
+          resetReviewEdit()
+        }
+        toast.success('리뷰를 삭제했습니다.')
+      } else {
+        toast.error(result.message)
+      }
+    } finally {
+      setDeletingReviewId(null)
     }
   }
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
       pending: { label: '결제대기', variant: 'secondary' },
       paid: { label: '결제완료', variant: 'default' },
       shipping: { label: '배송중', variant: 'default' },
@@ -136,7 +195,8 @@ export default function MyPage() {
               주문내역
             </TabsTrigger>
             <TabsTrigger value="wishlist" className="gap-2">
-              <Heart className="h-4 w-4" />찜 목록
+              <Heart className="h-4 w-4" />
+              찜 목록
             </TabsTrigger>
             <TabsTrigger value="reviews" className="gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -171,14 +231,10 @@ export default function MyPage() {
                     </div>
                     <CardContent className="flex flex-1 flex-col p-4 text-center">
                       <h3 className="mb-2 text-lg font-semibold">{product.name}</h3>
-                      <p className="mb-4 line-clamp-2 text-sm text-gray-600 whitespace-pre-line">
+                      <p className="mb-4 line-clamp-2 whitespace-pre-line text-sm text-gray-600">
                         {product.careInstructions || '매주 1회 흙이 마르면 물을 흠뻑 주세요.'}
                       </p>
-                      <Button
-                        variant="outline"
-                        className="mt-auto w-full"
-                        onClick={() => router.push(`/product/${product.id}`)}
-                      >
+                      <Button variant="outline" className="mt-auto w-full" onClick={() => router.push(`/product/${product.id}`)}>
                         상세 정보 보기
                       </Button>
                     </CardContent>
@@ -213,9 +269,7 @@ export default function MyPage() {
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="mb-2 text-lg">주문번호: {order.id}</CardTitle>
-                            <p className="text-sm text-gray-600">
-                              {new Date(order.createdAt).toLocaleDateString('ko-KR')}
-                            </p>
+                            <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString('ko-KR')}</p>
                           </div>
                           {getStatusBadge(order.status)}
                         </div>
@@ -234,7 +288,7 @@ export default function MyPage() {
                               <div className="flex-1">
                                 <p className="font-medium">{item.product.name}</p>
                                 <p className="text-sm text-gray-600">
-                                  {item.product.price.toLocaleString()}원 × {item.quantity}
+                                  {item.product.price.toLocaleString()}원 x {item.quantity}
                                 </p>
                               </div>
                             </div>
@@ -299,9 +353,13 @@ export default function MyPage() {
                         onClick={() => router.push(`/product/${product.id}`)}
                       />
                       <button
-                        onClick={() => {
-                          toggleWishlist(product.id)
-                          toast.success('찜 목록에서 제거되었습니다')
+                        onClick={async () => {
+                          const result = await toggleWishlist(product.id)
+                          if (result.success) {
+                            toast.success('찜 목록에서 제거했습니다.')
+                          } else {
+                            toast.error(result.message)
+                          }
                         }}
                         className="absolute right-2 top-2 rounded-full bg-white/80 p-2 hover:bg-white"
                       >
@@ -313,9 +371,13 @@ export default function MyPage() {
                       <p className="mb-4 text-lg font-semibold text-green-700">{product.price.toLocaleString()}원</p>
                       <Button
                         className="w-full"
-                        onClick={() => {
-                          addToCart(product.id)
-                          toast.success('장바구니에 추가되었습니다')
+                        onClick={async () => {
+                          const result = await addToCart(product.id)
+                          if (result.success) {
+                            toast.success('장바구니에 추가되었습니다')
+                          } else {
+                            toast.error(result.message)
+                          }
                         }}
                         disabled={product.stock === 0}
                       >
@@ -343,6 +405,9 @@ export default function MyPage() {
                   const product = products.find((p) => p.id === review.productId)
                   if (!product) return null
 
+                  const isEditing = editingReviewId === review.id
+                  const isDeleting = deletingReviewId === review.id
+
                   return (
                     <Card key={review.id}>
                       <CardContent className="p-6">
@@ -357,17 +422,85 @@ export default function MyPage() {
                               className="h-full w-full object-cover"
                             />
                           </div>
+
                           <div className="flex-1">
-                            <h3
-                              className="mb-2 cursor-pointer font-semibold hover:text-green-700"
-                              onClick={() => router.push(`/product/${product.id}`)}
-                            >
-                              {product.name}
-                            </h3>
-                            <p className="mb-2 text-sm text-gray-600">
-                              {new Date(review.createdAt).toLocaleDateString('ko-KR')}
-                            </p>
-                            <p className="text-gray-700">{review.content}</p>
+                            <div className="mb-2 flex items-start justify-between gap-4">
+                              <div>
+                                <h3
+                                  className="mb-2 cursor-pointer font-semibold hover:text-green-700"
+                                  onClick={() => router.push(`/product/${product.id}`)}
+                                >
+                                  {product.name}
+                                </h3>
+                                <div className="mb-2 flex">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`h-4 w-4 ${
+                                        star <= (isEditing ? editingReviewRating : review.rating)
+                                          ? 'fill-yellow-400 text-yellow-400'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <p className="mb-2 text-sm text-gray-600">
+                                  {new Date(review.createdAt).toLocaleDateString('ko-KR')}
+                                </p>
+                              </div>
+
+                              <div className="flex gap-2">
+                                {!isEditing ? (
+                                  <>
+                                    <Button variant="ghost" size="sm" onClick={() => handleStartEditReview(review)}>
+                                      수정
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => void handleDeleteReview(review.id)}
+                                      disabled={isDeleting}
+                                    >
+                                      {isDeleting ? '삭제 중...' : '삭제'}
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button variant="ghost" size="sm" onClick={() => void handleSaveReview()} disabled={isSavingReview}>
+                                      {isSavingReview ? '저장 중...' : '저장'}
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={resetReviewEdit} disabled={isSavingReview}>
+                                      취소
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {isEditing ? (
+                              <div className="space-y-3">
+                                <div className="flex gap-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button key={star} type="button" onClick={() => setEditingReviewRating(star)}>
+                                      <Star
+                                        className={`h-5 w-5 ${
+                                          star <= editingReviewRating
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
+                                        }`}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                                <Textarea
+                                  value={editingReviewContent}
+                                  onChange={(e) => setEditingReviewContent(e.target.value)}
+                                  rows={4}
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-gray-700">{review.content}</p>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -400,7 +533,7 @@ export default function MyPage() {
                       <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
                     </div>
                     <div>
-                      <Label htmlFor="newPassword">새 비밀번호 (변경 시에만 입력)</Label>
+                      <Label htmlFor="newPassword">새 비밀번호</Label>
                       <Input
                         id="newPassword"
                         type="password"
@@ -430,24 +563,10 @@ export default function MyPage() {
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          <div className="mt-4 space-y-4">
-                            <p>모든 정보가 삭제되며 복구할 수 없습니다.</p>
-                            <div>
-                              <Label htmlFor="deletePassword">비밀번호 확인</Label>
-                              <Input
-                                id="deletePassword"
-                                type="password"
-                                value={deletePassword}
-                                onChange={(e) => setDeletePassword(e.target.value)}
-                                placeholder="비밀번호를 입력하세요"
-                              />
-                            </div>
-                          </div>
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>모든 정보가 삭제되며 복구할 수 없습니다.</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setDeletePassword('')}>취소</AlertDialogCancel>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">
                           탈퇴하기
                         </AlertDialogAction>

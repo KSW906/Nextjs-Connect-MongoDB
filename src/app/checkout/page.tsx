@@ -50,7 +50,7 @@ export default function CheckoutPage() {
   const shippingFee = total >= 50000 ? 0 : 3000
   const finalTotal = total + shippingFee
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!recipientName || !phone || !address) {
@@ -93,7 +93,7 @@ export default function CheckoutPage() {
     })
 
     // Clear cart
-    clearCart()
+    await clearCart()
 
     toast.success('주문이 완료되었습니다')
     router.push(`/order-complete/${orderId}`)

@@ -12,7 +12,7 @@ import { ImageWithFallback } from '@/components/figma/ImageWithFallback'
 export default function CartPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { cart, products, removeFromCart, updateCartQuantity, getCartTotal } = useShop()
+  const { cart, products, removeFromCart, updateCartQuantity, getCartTotal, isCartLoading } = useShop()
 
   const cartItems = cart
     .map((item) => ({
@@ -23,40 +23,47 @@ export default function CartPage() {
 
   const total = getCartTotal()
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = async (productId: string, newQuantity: number) => {
     const product = products.find((p) => p.id === productId)
     if (product && newQuantity > product.stock) {
-      toast.error('재고가 부족합니다')
+      toast.error('재고가 부족합니다.')
       return
     }
-    updateCartQuantity(productId, newQuantity)
+
+    const result = await updateCartQuantity(productId, newQuantity)
+    if (!result.success) {
+      toast.error(result.message)
+    }
   }
 
-  const handleRemove = (productId: string) => {
-    removeFromCart(productId)
-    toast.success('장바구니에서 제거되었습니다')
+  const handleRemove = async (productId: string) => {
+    const result = await removeFromCart(productId)
+    if (result.success) {
+      toast.success('장바구니에서 제거했습니다.')
+    } else {
+      toast.error(result.message)
+    }
   }
 
   const handleCheckout = () => {
     if (!user) {
-      toast.error('로그인이 필요합니다')
+      toast.error('로그인이 필요합니다.')
       router.push('/login')
       return
     }
 
     if (cartItems.length === 0) {
-      toast.error('장바구니가 비어있습니다')
+      toast.error('장바구니가 비어 있습니다.')
       return
     }
 
-    // Check stock
     for (const item of cartItems) {
       if (item.product.stock < item.quantity) {
-        toast.error(`${item.product.name}의 재고가 부족합니다`)
+        toast.error(`${item.product.name} 재고가 부족합니다.`)
         return
       }
       if (item.product.stock === 0) {
-        toast.error(`${item.product.name}이(가) 품절되었습니다`)
+        toast.error(`${item.product.name} 상품이 품절되었습니다.`)
         return
       }
     }
@@ -64,13 +71,24 @@ export default function CartPage() {
     router.push('/checkout')
   }
 
+  if (isCartLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="text-center">
+          <h2 className="mb-2 text-2xl font-semibold">장바구니를 불러오는 중입니다</h2>
+          <p className="text-gray-600">잠시만 기다려 주세요.</p>
+        </div>
+      </div>
+    )
+  }
+
   if (cartItems.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
         <div className="text-center">
           <div className="mb-4 text-6xl">🛒</div>
-          <h2 className="mb-2 text-2xl font-semibold">장바구니가 비어있습니다</h2>
-          <p className="mb-6 text-gray-600">마음에 드는 식물을 담아보세요</p>
+          <h2 className="mb-2 text-2xl font-semibold">장바구니가 비어 있습니다</h2>
+          <p className="mb-6 text-gray-600">마음에 드는 식물을 담아보세요.</p>
           <Button onClick={() => router.push('/')}>쇼핑 계속하기</Button>
         </div>
       </div>
@@ -83,7 +101,6 @@ export default function CartPage() {
         <h1 className="mb-8 text-3xl font-bold">장바구니</h1>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Cart Items */}
           <div className="space-y-4 lg:col-span-2">
             {cartItems.map((item) => (
               <Card key={item.productId}>
@@ -109,7 +126,7 @@ export default function CartPage() {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center rounded-md border">
                           <button
-                            onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
+                            onClick={() => void handleQuantityChange(item.productId, item.quantity - 1)}
                             className="p-2 hover:bg-gray-100"
                             disabled={item.quantity <= 1}
                           >
@@ -117,7 +134,7 @@ export default function CartPage() {
                           </button>
                           <span className="min-w-[3rem] px-4 py-2 text-center">{item.quantity}</span>
                           <button
-                            onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
+                            onClick={() => void handleQuantityChange(item.productId, item.quantity + 1)}
                             className="p-2 hover:bg-gray-100"
                             disabled={item.quantity >= item.product.stock}
                           >
@@ -125,13 +142,13 @@ export default function CartPage() {
                           </button>
                         </div>
 
-                        <Button variant="ghost" size="sm" onClick={() => handleRemove(item.productId)}>
+                        <Button variant="ghost" size="sm" onClick={() => void handleRemove(item.productId)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
 
                       {item.quantity > item.product.stock && (
-                        <p className="mt-2 text-sm text-red-600">재고 부족 (남은 재고: {item.product.stock}개)</p>
+                        <p className="mt-2 text-sm text-red-600">재고 부족 상태입니다. 현재 재고: {item.product.stock}개</p>
                       )}
                     </div>
 
@@ -144,7 +161,6 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Order Summary */}
           <div>
             <Card className="sticky top-24">
               <CardContent className="p-6">
@@ -170,7 +186,7 @@ export default function CartPage() {
 
                 {total < 50000 && (
                   <p className="mb-4 text-center text-sm text-gray-600">
-                    {(50000 - total).toLocaleString()}원 더 담으면 무료배송!
+                    {(50000 - total).toLocaleString()}원 더 담으면 무료배송입니다.
                   </p>
                 )}
 

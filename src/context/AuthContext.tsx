@@ -13,8 +13,8 @@ interface AuthContextType {
     name: string,
     phone: string
   ) => Promise<{ success: boolean; message?: string }>
-  updateUser: (updates: Partial<User>) => Promise<{ success: boolean; message?: string }>
-  deleteAccount: (password: string) => Promise<{ success: boolean; message?: string }>
+  updateUser: (updates: Partial<User> & { password?: string }) => Promise<{ success: boolean; message?: string }>
+  deleteAccount: () => Promise<{ success: boolean; message?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -23,31 +23,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    // Load user from localStorage
+    // Load user from localStorage and restore the server session cookie if needed.
     const savedUser = localStorage.getItem('currentUser')
     if (savedUser) {
-      setUser(JSON.parse(savedUser))
+      const parsedUser = JSON.parse(savedUser)
+      setUser(parsedUser)
+      fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: parsedUser.id }),
+      }).catch(() => undefined)
     }
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
-    // Get users from localStorage
-    const usersStr = localStorage.getItem('users')
-    const users: Array<User & { password: string }> = usersStr ? JSON.parse(usersStr) : []
-
-    const foundUser = users.find((u) => u.email === email && u.password === password)
-
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser
-      setUser(userWithoutPassword)
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword))
-      return { success: true }
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setUser(data.user);
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+        return { success: true };
+      }
+      
+      return { success: false, message: data.message || '이메일 또는 비밀번호가 일치하지 않습니다.' };
+    } catch (error) {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' };
     }
-
-    return { success: false, message: '이메일 또는 비밀번호가 일치하지 않습니다.' }
   }
 
   const logout = () => {
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined)
     setUser(null)
     localStorage.removeItem('currentUser')
   }
@@ -71,72 +82,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, message: '비밀번호는 영문과 숫자 조합이어야 합니다.' }
     }
 
-    // Check for duplicate email
-    const usersStr = localStorage.getItem('users')
-    const users: Array<User & { password: string }> = usersStr ? JSON.parse(usersStr) : []
-
-    if (users.some((u) => u.email === email)) {
-      return { success: false, message: '이미 사용 중인 이메일입니다.' }
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name, phone }),
+      });
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setUser(data.user);
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+        return { success: true };
+      }
+      
+      return { success: false, message: data.message || '회원가입에 실패했습니다.' };
+    } catch (error) {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' };
     }
-
-    // Create new user
-    const isAdminAccount = email.startsWith('admin@') || email === 'admin@plantshop.com';
-    const newUser: User & { password: string } = {
-      id: Date.now().toString(),
-      email,
-      password,
-      name,
-      phone,
-      isAdmin: isAdminAccount,
-      createdAt: new Date().toISOString(),
-    }
-
-    users.push(newUser)
-    localStorage.setItem('users', JSON.stringify(users))
-
-    const { password: _, ...userWithoutPassword } = newUser
-    setUser(userWithoutPassword)
-    localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword))
-
-    return { success: true }
   }
 
-  const updateUser = async (updates: Partial<User>): Promise<{ success: boolean; message?: string }> => {
+  const updateUser = async (updates: Partial<User> & { password?: string }): Promise<{ success: boolean; message?: string }> => {
     if (!user) return { success: false, message: '로그인이 필요합니다.' }
 
-    const usersStr = localStorage.getItem('users')
-    const users: Array<User & { password: string }> = usersStr ? JSON.parse(usersStr) : []
+    try {
+      const response = await fetch('/api/auth/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, ...updates }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || '회원정보 수정에 실패했습니다.' }
+      }
 
-    const userIndex = users.findIndex((u) => u.id === user.id)
-    if (userIndex === -1) return { success: false, message: '사용자를 찾을 수 없습니다.' }
-
-    const updatedUser = { ...users[userIndex], ...updates }
-    users[userIndex] = updatedUser
-    localStorage.setItem('users', JSON.stringify(users))
-
-    const { password: _, ...userWithoutPassword } = updatedUser
-    setUser(userWithoutPassword)
-    localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword))
-
-    return { success: true }
+      setUser(data.user)
+      localStorage.setItem('currentUser', JSON.stringify(data.user))
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
+    }
   }
 
-  const deleteAccount = async (password: string): Promise<{ success: boolean; message?: string }> => {
+  const deleteAccount = async (): Promise<{ success: boolean; message?: string }> => {
     if (!user) return { success: false, message: '로그인이 필요합니다.' }
 
-    const usersStr = localStorage.getItem('users')
-    const users: Array<User & { password: string }> = usersStr ? JSON.parse(usersStr) : []
+    try {
+      const response = await fetch('/api/auth/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || '계정 삭제에 실패했습니다.' }
+      }
 
-    const foundUser = users.find((u) => u.id === user.id && u.password === password)
-    if (!foundUser) {
-      return { success: false, message: '비밀번호가 일치하지 않습니다.' }
+      logout()
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
     }
-
-    const filteredUsers = users.filter((u) => u.id !== user.id)
-    localStorage.setItem('users', JSON.stringify(filteredUsers))
-
-    logout()
-    return { success: true }
   }
 
   return (
