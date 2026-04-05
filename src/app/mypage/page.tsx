@@ -104,9 +104,9 @@ export default function MyPage() {
     }
   }
 
-  const handleCancelOrder = (orderId: string) => {
-    const success = cancelOrder(orderId)
-    if (success) {
+  const handleCancelOrder = async (orderId: string) => {
+    const result = await cancelOrder(orderId)
+    if (result.success) {
       toast.success('주문을 취소했습니다.')
     } else {
       toast.error('배송 중이거나 완료된 주문은 취소할 수 없습니다.')
@@ -256,12 +256,14 @@ export default function MyPage() {
                 </Card>
               ) : (
                 userOrders.map((order) => {
-                  const orderItems = order.items
-                    .map((item) => ({
-                      ...item,
-                      product: products.find((p) => p.id === item.productId)!,
-                    }))
-                    .filter((item) => item.product)
+                  const orderItems = order.items.map((item) => ({
+                    ...item,
+                    product: {
+                      image: item.productImage,
+                      name: item.productName,
+                      price: item.unitPrice,
+                    },
+                  }))
 
                   return (
                     <Card key={order.id}>
@@ -280,13 +282,13 @@ export default function MyPage() {
                             <div key={item.productId} className="flex gap-4">
                               <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
                                 <ImageWithFallback
-                                  src={item.product.image}
-                                  alt={item.product.name}
+                                  src={item.productImage}
+                                  alt={item.productName}
                                   className="h-full w-full object-cover"
                                 />
                               </div>
                               <div className="flex-1">
-                                <p className="font-medium">{item.product.name}</p>
+                                <p className="font-medium">{item.productName}</p>
                                 <p className="text-sm text-gray-600">
                                   {item.product.price.toLocaleString()}원 x {item.quantity}
                                 </p>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
+import { RecentViewedFloating } from '@/components/RecentViewedFloating'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/context/AuthContext'
 import { ShopProvider } from '@/context/ShopContext'
@@ -23,6 +24,7 @@ export default function RootLayout({
           <ShopProvider>
             <div className="flex min-h-screen flex-col">
               <Header />
+              <RecentViewedFloating />
               <main className="flex-1">{children}</main>
               <Footer />
               <Toaster />

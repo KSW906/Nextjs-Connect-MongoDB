@@ -10,6 +10,7 @@ import { ImageWithFallback } from '@/components/figma/ImageWithFallback'
 import { useAuth } from '@/context/AuthContext'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { saveRecentViewedProduct } from '@/lib/recentViewed'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -37,6 +38,14 @@ export default function ProductDetailPage() {
       reviewFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }, [editingReviewId])
+
+  useEffect(() => {
+    if (!product) {
+      return
+    }
+
+    saveRecentViewedProduct(product)
+  }, [product])
 
   if (!product) {
     return (

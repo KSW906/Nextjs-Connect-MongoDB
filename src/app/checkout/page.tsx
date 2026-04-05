@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useShop } from '@/context/ShopContext'
@@ -16,11 +16,13 @@ import { PaymentMethod } from '@/types'
 export default function CheckoutPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { cart, products, getCartTotal, clearCart, createOrder, updateProduct } = useShop()
+  const { cart, products, getCartTotal, createOrder } = useShop()
 
   const [recipientName, setRecipientName] = useState(user?.name || '')
   const [phone, setPhone] = useState(user?.phone || '')
+  const [zipcode, setZipcode] = useState('')
   const [address, setAddress] = useState('')
+  const [addressDetail, setAddressDetail] = useState('')
   const [message, setMessage] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card')
 
@@ -35,9 +37,9 @@ export default function CheckoutPage() {
   const cartItems = cart
     .map((item) => ({
       ...item,
-      product: products.find((p) => p.id === item.productId)!,
+      product: products.find((product) => product.id === item.productId),
     }))
-    .filter((item) => item.product)
+    .filter((item): item is typeof item & { product: NonNullable<typeof item.product> } => item.product !== undefined)
 
   if (cartItems.length === 0) {
     if (typeof window !== 'undefined') {
@@ -54,49 +56,36 @@ export default function CheckoutPage() {
     e.preventDefault()
 
     if (!recipientName || !phone || !address) {
-      toast.error('배송 정보를 모두 입력해주세요')
+      toast.error('배송 정보를 모두 입력해주세요.')
       return
     }
 
-    // Check stock again
     for (const item of cartItems) {
       if (item.product.stock < item.quantity) {
-        toast.error(`${item.product.name}의 재고가 부족합니다`)
+        toast.error(`${item.product.name} 재고가 부족합니다.`)
         return
       }
     }
 
-    // Create order
-    const estimatedDelivery = new Date()
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + 3)
-
-    const orderId = createOrder({
-      userId: user.id,
-      items: cart,
-      total: finalTotal,
-      status: 'paid',
+    const result = await createOrder({
       paymentMethod,
       shippingInfo: {
         recipientName,
+        zipcode,
         address,
+        addressDetail,
         phone,
         message,
       },
-      estimatedDelivery: estimatedDelivery.toISOString(),
     })
 
-    // Update stock
-    cartItems.forEach((item) => {
-      updateProduct(item.productId, {
-        stock: item.product.stock - item.quantity,
-      })
-    })
+    if (!result.success || !result.orderId) {
+      toast.error(result.message || '주문을 생성하지 못했습니다.')
+      return
+    }
 
-    // Clear cart
-    await clearCart()
-
-    toast.success('주문이 완료되었습니다')
-    router.push(`/order-complete/${orderId}`)
+    toast.success('주문이 완료되었습니다.')
+    router.push(`/order-complete/${result.orderId}`)
   }
 
   return (
@@ -105,14 +94,13 @@ export default function CheckoutPage() {
         <h1 className="mb-8 text-3xl font-bold">주문/결제</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Shipping Info */}
           <Card>
             <CardHeader>
               <CardTitle>배송 정보</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="recipientName">받는 사람</Label>
+                <Label htmlFor="recipientName">받는 분</Label>
                 <Input
                   id="recipientName"
                   value={recipientName}
@@ -132,6 +120,15 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
+                <Label htmlFor="zipcode">우편번호</Label>
+                <Input
+                  id="zipcode"
+                  value={zipcode}
+                  onChange={(e) => setZipcode(e.target.value)}
+                  placeholder="12345"
+                />
+              </div>
+              <div>
                 <Label htmlFor="address">주소</Label>
                 <Input
                   id="address"
@@ -142,7 +139,16 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="message">배송 요청사항 (선택)</Label>
+                <Label htmlFor="addressDetail">상세주소</Label>
+                <Input
+                  id="addressDetail"
+                  value={addressDetail}
+                  onChange={(e) => setAddressDetail(e.target.value)}
+                  placeholder="동, 호수 등을 입력해주세요"
+                />
+              </div>
+              <div>
+                <Label htmlFor="message">배송 요청사항</Label>
                 <Textarea
                   id="message"
                   value={message}
@@ -154,7 +160,6 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Order Items */}
           <Card>
             <CardHeader>
               <CardTitle>주문 상품</CardTitle>
@@ -166,7 +171,7 @@ export default function CheckoutPage() {
                     <div>
                       <p className="font-medium">{item.product.name}</p>
                       <p className="text-sm text-gray-600">
-                        {item.product.price.toLocaleString()}원 × {item.quantity}
+                        {item.product.price.toLocaleString()}원 x {item.quantity}
                       </p>
                     </div>
                     <p className="font-semibold">{(item.product.price * item.quantity).toLocaleString()}원</p>
@@ -176,13 +181,12 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Payment Method */}
           <Card>
             <CardHeader>
               <CardTitle>결제 수단</CardTitle>
             </CardHeader>
             <CardContent>
-              <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+              <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="card" id="card" />
                   <Label htmlFor="card" className="cursor-pointer">
@@ -205,7 +209,6 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Payment Summary */}
           <Card>
             <CardHeader>
               <CardTitle>결제 금액</CardTitle>
@@ -226,7 +229,6 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          {/* Submit */}
           <div className="flex gap-4">
             <Button type="button" variant="outline" onClick={() => router.push('/cart')} className="flex-1">
               취소

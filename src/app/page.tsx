@@ -78,7 +78,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 lg:pl-20 xl:pl-64">
         {/* Search Result Info */}
         {searchQuery && (
           <div className="mb-6">
@@ -120,7 +120,7 @@ export default function HomePage() {
 
         {/* Products Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-4">
                 <Skeleton className="aspect-square w-full" />
@@ -135,7 +135,7 @@ export default function HomePage() {
             <p className="text-sm text-gray-500">다른 검색어나 카테고리를 선택해보세요</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {filteredAndSortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

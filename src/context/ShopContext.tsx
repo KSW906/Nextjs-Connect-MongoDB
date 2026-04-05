@@ -5,8 +5,11 @@ import {
   Product,
   CartItem,
   Order,
+  CreateOrderInput,
+  UpdateOrderInput,
   Review,
   CartActionResult,
+  OrderActionResult,
   ReviewActionResult,
   WishlistActionResult,
 } from '../types'
@@ -26,9 +29,9 @@ interface ShopContextType {
   updateCartQuantity: (productId: string, quantity: number) => Promise<CartActionResult>
   clearCart: () => Promise<CartActionResult>
   toggleWishlist: (productId: string) => Promise<WishlistActionResult>
-  createOrder: (order: Omit<Order, 'id' | 'createdAt'>) => string
-  cancelOrder: (orderId: string) => boolean
-  updateOrderStatus: (orderId: string, status: Order['status']) => void
+  createOrder: (order: CreateOrderInput) => Promise<OrderActionResult>
+  cancelOrder: (orderId: string) => Promise<OrderActionResult>
+  updateOrderStatus: (orderId: string, updates: UpdateOrderInput) => Promise<OrderActionResult>
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void
   updateProduct: (id: string, updates: Partial<Product>) => void
   deleteProduct: (id: string) => void
@@ -65,6 +68,14 @@ function wishlistLoginRequired(): WishlistActionResult {
   }
 }
 
+function orderLoginRequired(): OrderActionResult {
+  return {
+    success: false,
+    message: '濡쒓렇?몄씠 ?꾩슂?⑸땲??',
+    requiresLogin: true,
+  }
+}
+
 export function ShopProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
@@ -89,20 +100,12 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setProducts(mockProducts)
     }
-
-    const savedOrders = localStorage.getItem('orders')
-    if (savedOrders) setOrders(JSON.parse(savedOrders))
-
     setIsInitialized(true)
   }, [])
 
   useEffect(() => {
     if (isInitialized) localStorage.setItem('products', JSON.stringify(products))
   }, [products, isInitialized])
-
-  useEffect(() => {
-    if (isInitialized) localStorage.setItem('orders', JSON.stringify(orders))
-  }, [orders, isInitialized])
 
   useEffect(() => {
     if (!isInitialized) return
@@ -121,6 +124,32 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
     void loadReviews()
   }, [isInitialized, user?.id])
+
+  useEffect(() => {
+    if (!isInitialized) return
+
+    if (!user) {
+      setOrders([])
+      return
+    }
+
+    const loadOrders = async () => {
+      try {
+        const response = await fetch('/api/orders')
+        const data = await response.json()
+
+        if (response.ok && data.success) {
+          setOrders(Array.isArray(data.orders) ? data.orders : [])
+        } else {
+          setOrders([])
+        }
+      } catch {
+        setOrders([])
+      }
+    }
+
+    void loadOrders()
+  }, [isInitialized, user])
 
   useEffect(() => {
     if (!isInitialized) return
@@ -287,27 +316,81 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const createOrder = (orderData: Omit<Order, 'id' | 'createdAt'>): string => {
-    const newOrder: Order = {
-      ...orderData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
+  const createOrder = async (orderData: CreateOrderInput): Promise<OrderActionResult> => {
+    if (!user) return orderLoginRequired()
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success || !data.order) {
+        return { success: false, message: data.message || '二쇰Ц?섏? 紐삵뻽?듬땲??' }
+      }
+
+      setOrders((prev) => [data.order, ...prev])
+      setCart(Array.isArray(data.cartItems) ? data.cartItems : [])
+
+      if (Array.isArray(data.updatedProducts)) {
+        setProducts((prev) =>
+          prev.map((product) => {
+            const updatedProduct = data.updatedProducts.find((item: Product) => item.id === product.id)
+            return updatedProduct ?? product
+          })
+        )
+      }
+
+      return { success: true, orderId: data.order.id }
+    } catch {
+      return { success: false, message: '?쒕쾭 ?듭떊 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.' }
     }
-    setOrders((prev) => [newOrder, ...prev])
-    return newOrder.id
   }
 
-  const cancelOrder = (orderId: string): boolean => {
-    const order = orders.find((o) => o.id === orderId)
-    if (!order || order.status === 'shipping' || order.status === 'delivered') {
-      return false
+  const cancelOrder = async (orderId: string): Promise<OrderActionResult> => {
+    if (!user) return orderLoginRequired()
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status: 'cancelled' }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success || !data.order) {
+        return { success: false, message: data.message || '二쇰Ц??痍⑥냼?섏? 紐삵뻽?듬땲??' }
+      }
+
+      setOrders((prev) => prev.map((order) => (order.id === orderId ? data.order : order)))
+      return { success: true, orderId }
+    } catch {
+      return { success: false, message: '?쒕쾭 ?듭떊 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.' }
     }
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'cancelled' as const } : o)))
-    return true
   }
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)))
+  const updateOrderStatus = async (orderId: string, updates: UpdateOrderInput): Promise<OrderActionResult> => {
+    if (!user) return orderLoginRequired()
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, ...updates }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success || !data.order) {
+        return { success: false, message: data.message || '二쇰Ц ?곹깭瑜?蹂寃쏀븯吏 紐삵뻽?듬땲??' }
+      }
+
+      setOrders((prev) => prev.map((order) => (order.id === orderId ? data.order : order)))
+      return { success: true, orderId }
+    } catch {
+      return { success: false, message: '?쒕쾭 ?듭떊 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.' }
+    }
   }
 
   const addProduct = (productData: Omit<Product, 'id' | 'createdAt'>) => {

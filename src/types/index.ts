@@ -34,6 +34,13 @@ export interface CartActionResult {
   requiresLogin?: boolean
 }
 
+export interface OrderActionResult {
+  success: boolean
+  message?: string
+  requiresLogin?: boolean
+  orderId?: string
+}
+
 export interface ReviewActionResult {
   success: boolean
   message?: string
@@ -49,24 +56,65 @@ export interface WishlistActionResult {
 // Order Types
 export type OrderStatus = 'pending' | 'paid' | 'shipping' | 'delivered' | 'cancelled'
 export type PaymentMethod = 'card' | 'transfer' | 'kakaopay'
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled'
+export type RefundStatus = 'none' | 'requested' | 'processing' | 'refunded' | 'rejected'
 
 export interface ShippingInfo {
   recipientName: string
+  zipcode?: string
   address: string
+  addressDetail?: string
   phone: string
   message?: string
 }
 
+export interface OrderItem {
+  productId: string
+  productName: string
+  productImage: string
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
 export interface Order {
   id: string
+  orderNumber: string
   userId: string
-  items: CartItem[]
+  items: OrderItem[]
+  subtotal: number
+  shippingFee: number
   total: number
   status: OrderStatus
   paymentMethod: PaymentMethod
+  paymentStatus: PaymentStatus
   shippingInfo: ShippingInfo
   createdAt: string
   estimatedDelivery: string
+  paidAt?: string | null
+  shippedAt?: string | null
+  deliveredAt?: string | null
+  cancelledAt?: string | null
+  refundedAt?: string | null
+  cancelReason?: string
+  courier?: string
+  trackingNumber?: string
+  refundStatus: RefundStatus
+  memo?: string
+}
+
+export interface CreateOrderInput {
+  paymentMethod: PaymentMethod
+  shippingInfo: ShippingInfo
+}
+
+export interface UpdateOrderInput {
+  status: OrderStatus
+  cancelReason?: string
+  courier?: string
+  trackingNumber?: string
+  refundStatus?: RefundStatus
+  memo?: string
 }
 
 // Review Types

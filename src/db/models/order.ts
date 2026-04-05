@@ -51,10 +51,22 @@ const ShippingInfoSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    zipcode: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 20,
+    },
     address: {
       type: String,
       required: true,
       trim: true,
+    },
+    addressDetail: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 200,
     },
     phone: {
       type: String,
@@ -135,9 +147,25 @@ const OrderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    shippedAt: {
+      type: Date,
+      default: null,
+    },
     shippingInfo: {
       type: ShippingInfoSchema,
       required: true,
+    },
+    courier: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 100,
+    },
+    trackingNumber: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 100,
     },
     estimatedDelivery: {
       type: Date,
@@ -151,11 +179,21 @@ const OrderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    refundedAt: {
+      type: Date,
+      default: null,
+    },
     cancelReason: {
       type: String,
       default: '',
       trim: true,
       maxlength: 500,
+    },
+    refundStatus: {
+      type: String,
+      enum: ['none', 'requested', 'processing', 'refunded', 'rejected'],
+      default: 'none',
+      index: true,
     },
     memo: {
       type: String,
@@ -173,6 +211,8 @@ const OrderSchema = new mongoose.Schema(
 OrderSchema.index({ user: 1, createdAt: -1 })
 OrderSchema.index({ user: 1, status: 1, createdAt: -1 })
 OrderSchema.index({ paymentStatus: 1, status: 1, createdAt: -1 })
+OrderSchema.index({ trackingNumber: 1 })
+OrderSchema.index({ refundStatus: 1, createdAt: -1 })
 
 const Order = mongoose.models.Order || mongoose.model('Order', OrderSchema)
 
