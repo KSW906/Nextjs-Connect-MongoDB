@@ -69,16 +69,16 @@ function RecentViewedPanel({
 }) {
   return (
     <>
-      <div className="border-b border-gray-100 px-3 py-3">
-        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
-          <SlidersHorizontal className="h-3.5 w-3.5" />
+      <div className="border-b border-gray-100 px-2.5 py-2.5">
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+          <SlidersHorizontal className="h-3 w-3" />
           Filter & Sort
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={onToggleToday}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
               showTodayOnly ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -87,7 +87,7 @@ function RecentViewedPanel({
           <button
             type="button"
             onClick={() => onSortChange('recent')}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
               sortMode === 'recent' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -96,7 +96,7 @@ function RecentViewedPanel({
           <button
             type="button"
             onClick={() => onSortChange('price-desc')}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
               sortMode === 'price-desc' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -105,7 +105,7 @@ function RecentViewedPanel({
           <button
             type="button"
             onClick={() => onSortChange('price-asc')}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
               sortMode === 'price-asc' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -114,7 +114,7 @@ function RecentViewedPanel({
         </div>
       </div>
 
-      <div className="space-y-3 p-3">
+      <div className="space-y-2.5 p-2.5">
         {items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
             <p className="text-sm font-medium text-gray-700">최근 본 상품이 아직 없어요.</p>
@@ -146,18 +146,18 @@ function RecentViewedPanel({
                   </div>
                 </button>
 
-                <div className="p-3">
+                <div className="p-2.5">
                   <button type="button" onClick={() => onSelect(item.id)} className="block w-full text-left">
-                    <p className="line-clamp-2 text-sm font-medium text-gray-900">{item.name}</p>
+                    <p className="line-clamp-2 text-xs font-medium text-gray-900">{item.name}</p>
                     <p className="mt-2 text-sm font-semibold text-emerald-700">{item.price.toLocaleString()}원</p>
                   </button>
 
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-2.5 flex items-center justify-between">
                     <p className="text-[11px] text-gray-400">{new Date(item.viewedAt).toLocaleDateString('ko-KR')}</p>
                     <button
                       type="button"
                       onClick={() => onToggleWishlist(item.id)}
-                      className="rounded-full border border-gray-200 p-2 text-gray-500 transition hover:border-emerald-200 hover:bg-white"
+                      className="rounded-full border border-gray-200 p-1.5 text-gray-500 transition hover:border-emerald-200 hover:bg-white"
                       aria-label="찜하기"
                     >
                       <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
@@ -170,7 +170,7 @@ function RecentViewedPanel({
         )}
       </div>
 
-      <div className="border-t border-gray-100 p-3">
+      <div className="border-t border-gray-100 p-2.5">
         <Button type="button" variant="outline" className="w-full border-gray-200 text-gray-600" onClick={onClear}>
           <X className="mr-2 h-4 w-4" />
           전체 비우기
@@ -247,7 +247,7 @@ export function RecentViewedFloating() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-20 rounded-full border-emerald-200 bg-white/95 px-2.5 shadow-xl backdrop-blur"
+              className="h-16 rounded-full border-emerald-200 bg-white/95 px-2 shadow-xl backdrop-blur"
               onClick={() => setIsDesktopOpen(true)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -255,11 +255,11 @@ export function RecentViewedFloating() {
           )}
 
           {isDesktopOpen && (
-            <aside className="w-52 overflow-hidden rounded-2xl border border-emerald-100 bg-white/92 shadow-2xl backdrop-blur">
-              <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-br from-emerald-50 to-white px-4 py-3">
+            <aside className="w-44 overflow-hidden rounded-2xl border border-emerald-100 bg-white/92 shadow-2xl backdrop-blur">
+              <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-br from-emerald-50 to-white px-3 py-2.5">
                 <div>
-                  <p className="flex items-center gap-2 text-sm font-semibold text-emerald-900">
-                    <Clock3 className="h-4 w-4" />
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900">
+                      <Clock3 className="h-3.5 w-3.5" />
                     최근 본 상품
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
@@ -276,7 +276,7 @@ export function RecentViewedFloating() {
                 </button>
               </div>
 
-              <div className="max-h-[72vh] overflow-y-auto">
+              <div className="max-h-[66vh] overflow-y-auto">
                 <RecentViewedPanel
                   items={filteredItems}
                   showTodayOnly={showTodayOnly}

@@ -92,7 +92,16 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsedProducts = savedProducts ? JSON.parse(savedProducts) : null
       if (parsedProducts && Array.isArray(parsedProducts) && parsedProducts.length > 0) {
-        setProducts(parsedProducts)
+        const savedProductsById = new Map(parsedProducts.map((product: Product) => [product.id, product]))
+        const mergedProducts = [
+          ...mockProducts.map((product) => {
+            const savedProduct = savedProductsById.get(product.id)
+            return savedProduct ? { ...savedProduct, ...product } : product
+          }),
+          ...parsedProducts.filter((product: Product) => !mockProducts.some((mockProduct) => mockProduct.id === product.id)),
+        ]
+        setProducts(mergedProducts)
+        localStorage.setItem('products', JSON.stringify(mergedProducts))
       } else {
         setProducts(mockProducts)
         localStorage.setItem('products', JSON.stringify(mockProducts))

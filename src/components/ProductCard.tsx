@@ -27,14 +27,14 @@ export function ProductCard({ product }: ProductCardProps) {
     if (isOutOfStock) return
 
     if (!user) {
-      toast.error('로그인한 사용자만 장바구니에 담을 수 있습니다.')
+      toast.error('로그인한 사용자만 장바구니를 이용할 수 있습니다.')
       router.push('/login')
       return
     }
 
     const result = await addToCart(product.id)
     if (result.success) {
-      toast.success('장바구니에 추가했습니다.')
+      toast.success('장바구니에 추가되었습니다.')
     } else {
       toast.error(result.message)
     }
@@ -51,7 +51,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
     const result = await toggleWishlist(product.id)
     if (result.success) {
-      toast.success(isWishlisted ? '찜 목록에서 제거했습니다.' : '찜 목록에 추가했습니다.')
+      toast.success(isWishlisted ? '찜 목록에서 제거되었습니다.' : '찜 목록에 추가되었습니다.')
     } else {
       toast.error(result.message)
     }
@@ -62,7 +62,7 @@ export function ProductCard({ product }: ProductCardProps) {
       className="cursor-pointer overflow-hidden transition-shadow hover:shadow-lg"
       onClick={() => router.push(`/product/${product.id}`)}
     >
-      <div className="relative aspect-square overflow-hidden bg-gray-100">
+      <div className="relative aspect-[4/5] overflow-hidden bg-gray-100">
         <ImageWithFallback src={product.image} alt={product.name} className="h-full w-full object-cover" />
         {isOutOfStock && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">

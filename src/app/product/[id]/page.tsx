@@ -40,10 +40,7 @@ export default function ProductDetailPage() {
   }, [editingReviewId])
 
   useEffect(() => {
-    if (!product) {
-      return
-    }
-
+    if (!product) return
     saveRecentViewedProduct(product)
   }, [product])
 
@@ -69,7 +66,7 @@ export default function ProductDetailPage() {
     if (isOutOfStock) return
 
     if (!user) {
-      toast.error('로그인한 사용자만 장바구니에 담을 수 있습니다.')
+      toast.error('로그인한 사용자만 장바구니를 이용할 수 있습니다.')
       router.push('/login')
       return
     }
@@ -91,7 +88,7 @@ export default function ProductDetailPage() {
 
     const result = await toggleWishlist(product.id)
     if (result.success) {
-      toast.success(isWishlisted ? '찜 목록에서 제거했습니다.' : '찜 목록에 추가했습니다.')
+      toast.success(isWishlisted ? '찜 목록에서 제거되었습니다.' : '찜 목록에 추가되었습니다.')
     } else {
       toast.error(result.message)
     }
@@ -261,11 +258,11 @@ export default function ProductDetailPage() {
             <div ref={reviewFormRef} className="mb-6 rounded-lg bg-gray-50 p-6">
               <div className="mb-4 flex items-center justify-between gap-4">
                 <h3 className="font-semibold">{editingReviewId ? '리뷰 수정' : '리뷰 작성'}</h3>
-                {editingReviewId && <span className="text-sm text-gray-500">내 리뷰를 수정하는 중입니다</span>}
+                {editingReviewId && <span className="text-sm text-gray-500">현재 리뷰를 수정하는 중입니다.</span>}
               </div>
 
               <div className="mb-4">
-                <label className="mb-2 block text-sm font-medium">평점</label>
+                <label className="mb-2 block text-sm font-medium">별점</label>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button key={star} onClick={() => setReviewRating(star)} type="button">
@@ -280,7 +277,7 @@ export default function ProductDetailPage() {
               </div>
 
               <Textarea
-                placeholder="리뷰를 작성해 주세요"
+                placeholder="리뷰를 작성해 주세요."
                 value={reviewContent}
                 onChange={(e) => setReviewContent(e.target.value)}
                 className="mb-4"
