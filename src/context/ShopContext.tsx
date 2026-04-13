@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import {
   Product,
   CartItem,
@@ -10,6 +10,7 @@ import {
   Review,
   CartActionResult,
   OrderActionResult,
+  ProductActionResult,
   ReviewActionResult,
   WishlistActionResult,
 } from '../types'
@@ -32,9 +33,9 @@ interface ShopContextType {
   createOrder: (order: CreateOrderInput) => Promise<OrderActionResult>
   cancelOrder: (orderId: string) => Promise<OrderActionResult>
   updateOrderStatus: (orderId: string, updates: UpdateOrderInput) => Promise<OrderActionResult>
-  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void
-  updateProduct: (id: string, updates: Partial<Product>) => void
-  deleteProduct: (id: string) => void
+  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<ProductActionResult>
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<ProductActionResult>
+  deleteProduct: (id: string) => Promise<ProductActionResult>
   addReview: (review: Omit<Review, 'id' | 'createdAt' | 'updatedAt' | 'userName'>) => Promise<ReviewActionResult>
   updateReview: (id: string, content: string, rating: number) => Promise<ReviewActionResult>
   deleteReview: (id: string) => Promise<ReviewActionResult>
@@ -86,6 +87,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
+  const syncedCustomProductIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     const savedProducts = localStorage.getItem('products')
@@ -115,6 +117,36 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isInitialized) localStorage.setItem('products', JSON.stringify(products))
   }, [products, isInitialized])
+
+  useEffect(() => {
+    if (!isInitialized || !user?.isAdmin) return
+
+    const customProducts = products.filter((product) => !mockProducts.some((mockProduct) => mockProduct.id === product.id))
+    const unsyncedProducts = customProducts.filter((product) => !syncedCustomProductIdsRef.current.has(product.id))
+
+    if (unsyncedProducts.length === 0) return
+
+    const syncCustomProducts = async () => {
+      for (const product of unsyncedProducts) {
+        try {
+          const response = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product),
+          })
+          const data = await response.json()
+
+          if (response.ok && data.success) {
+            syncedCustomProductIdsRef.current.add(product.id)
+          }
+        } catch {
+          return
+        }
+      }
+    }
+
+    void syncCustomProducts()
+  }, [isInitialized, products, user?.isAdmin])
 
   useEffect(() => {
     if (!isInitialized) return
@@ -402,21 +434,64 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const addProduct = (productData: Omit<Product, 'id' | 'createdAt'>) => {
-    const newProduct: Product = {
-      ...productData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
+  const addProduct = async (productData: Omit<Product, 'id' | 'createdAt'>): Promise<ProductActionResult> => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success || !data.product) {
+        return { success: false, message: data.message || 'Failed to create product.' }
+      }
+
+      setProducts((prev) => [data.product, ...prev])
+      return { success: true }
+    } catch {
+      return { success: false, message: 'Server communication failed.' }
     }
-    setProducts((prev) => [newProduct, ...prev])
   }
 
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)))
+  const updateProduct = async (id: string, updates: Partial<Product>): Promise<ProductActionResult> => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success || !data.product) {
+        return { success: false, message: data.message || 'Failed to update product.' }
+      }
+
+      setProducts((prev) => prev.map((product) => (product.id === id ? data.product : product)))
+      return { success: true }
+    } catch {
+      return { success: false, message: 'Server communication failed.' }
+    }
   }
 
-  const deleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id))
+  const deleteProduct = async (id: string): Promise<ProductActionResult> => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        return { success: false, message: data.message || 'Failed to delete product.' }
+      }
+
+      setProducts((prev) => prev.filter((product) => product.id !== id))
+      return { success: true }
+    } catch {
+      return { success: false, message: 'Server communication failed.' }
+    }
   }
 
   const addReview = async (

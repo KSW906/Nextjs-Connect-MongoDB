@@ -3,7 +3,7 @@
 import { Product } from '../types'
 import { Button } from './ui/button'
 import { Card, CardContent, CardFooter } from './ui/card'
-import { Heart, ShoppingCart } from 'lucide-react'
+import { Heart, ShoppingCart, Star } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useShop } from '../context/ShopContext'
 import { useAuth } from '../context/AuthContext'
@@ -17,10 +17,15 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { addToCart, wishlist, toggleWishlist } = useShop()
+  const { addToCart, wishlist, toggleWishlist, reviews } = useShop()
 
   const isWishlisted = wishlist.includes(product.id)
   const isOutOfStock = product.stock === 0
+  const productReviews = reviews.filter((review) => review.productId === product.id)
+  const averageRating =
+    productReviews.length > 0
+      ? productReviews.reduce((sum, review) => sum + review.rating, 0) / productReviews.length
+      : 0
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -77,7 +82,16 @@ export function ProductCard({ product }: ProductCardProps) {
         </button>
       </div>
       <CardContent className="p-4">
-        <h3 className="mb-1 font-semibold">{product.name}</h3>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <h3 className="min-w-0 flex-1 truncate font-semibold">{product.name}</h3>
+          <div className="flex flex-shrink-0 items-center gap-1 text-sm">
+            <Star className={`h-4 w-4 text-amber-500 ${productReviews.length > 0 ? 'fill-current' : ''}`} />
+            <span className="font-medium text-gray-700">
+              {productReviews.length > 0 ? averageRating.toFixed(1) : '-'}
+            </span>
+            <span className="text-gray-500">({productReviews.length})</span>
+          </div>
+        </div>
         <p className="mb-2 line-clamp-1 text-sm text-gray-600">{product.description}</p>
         <div className="flex items-center justify-between">
           <p className="text-lg font-semibold text-green-700">{product.price.toLocaleString()}원</p>

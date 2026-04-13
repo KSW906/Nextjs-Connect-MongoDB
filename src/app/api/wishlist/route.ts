@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import dbConnect from '@/db/dbConnect'
 import Wishlist from '@/db/models/wishlist'
-import Product from '@/db/models/product'
 import User from '@/db/models/user'
 import { getSessionUserId } from '@/lib/auth'
+import { ensureProductDocumentById } from '@/lib/products'
 
 async function getAuthedUserId() {
   const userId = await getSessionUserId()
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'productId is required.' }, { status: 400 })
     }
 
-    const product = await Product.findOne({ id: productId })
+    const product = await ensureProductDocumentById(productId)
     if (!product) {
       return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })
     }

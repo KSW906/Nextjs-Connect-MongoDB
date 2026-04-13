@@ -33,7 +33,9 @@ function loadMockProducts() {
     throw new Error('Could not locate mockProducts in src/data/mockProducts.ts')
   }
 
-  const sandbox = {}
+  const sandbox = {
+    productImage: (fileName) => `/images/products/${fileName}`,
+  }
   const script = new vm.Script(`mockProducts = ${match[1]}`)
   vm.createContext(sandbox)
   script.runInContext(sandbox)

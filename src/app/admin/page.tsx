@@ -73,7 +73,6 @@ export default function AdminPage() {
           memo: order.memo || '',
         }
       })
-
       return next
     })
   }, [orders])
@@ -102,7 +101,7 @@ export default function AdminPage() {
     return labels[paymentMethod]
   }
 
-  const handleSubmitProduct = (e: React.FormEvent) => {
+  const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!productName || !productDescription || !productPrice || !productStock || !productImage) {
@@ -124,7 +123,7 @@ export default function AdminPage() {
     }
 
     if (editingProduct) {
-      updateProduct(editingProduct, {
+      const result = await updateProduct(editingProduct, {
         name: productName,
         description: productDescription,
         detailedDescription: productDetailedDescription,
@@ -134,9 +133,13 @@ export default function AdminPage() {
         category: productCategory,
         image: productImage,
       })
+      if (!result.success) {
+        toast.error(result.message || 'Product update failed.')
+        return
+      }
       toast.success('상품을 수정했습니다.')
     } else {
-      addProduct({
+      const result = await addProduct({
         name: productName,
         description: productDescription,
         detailedDescription: productDetailedDescription,
@@ -146,6 +149,10 @@ export default function AdminPage() {
         category: productCategory,
         image: productImage,
       })
+      if (!result.success) {
+        toast.error(result.message || 'Product creation failed.')
+        return
+      }
       toast.success('상품을 등록했습니다.')
     }
 
@@ -166,8 +173,12 @@ export default function AdminPage() {
     setIsAddDialogOpen(true)
   }
 
-  const handleDeleteProduct = (productId: string) => {
-    deleteProduct(productId)
+  const handleDeleteProduct = async (productId: string) => {
+    const result = await deleteProduct(productId)
+    if (!result.success) {
+      toast.error(result.message || 'Product deletion failed.')
+      return
+    }
     toast.success('상품을 삭제했습니다.')
   }
 

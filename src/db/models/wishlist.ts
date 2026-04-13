@@ -37,7 +37,7 @@ const WishlistSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    collection: 'wishlists',
+    collection: 'wishlist',
   }
 )
 

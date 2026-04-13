@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/db/dbConnect'
 import Review from '@/db/models/review'
-import Product from '@/db/models/product'
 import User from '@/db/models/user'
 import { getSessionUserId } from '@/lib/auth'
+import { ensureProductDocumentById } from '@/lib/products'
 import { maskReviewerName } from '@/lib/review'
 
 type ReviewResponse = {
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     const query: Record<string, unknown> = { status: 'visible' }
 
     if (productId) {
-      const product = await Product.findOne({ id: productId })
+      const product = await ensureProductDocumentById(productId)
       if (!product) {
         return NextResponse.json({ success: true, reviews: [] }, { status: 200 })
       }
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     }
 
     const user = await User.findById(userId)
-    const product = await Product.findOne({ id: productId })
+    const product = await ensureProductDocumentById(productId)
 
     if (!user || !product) {
       return NextResponse.json({ success: false, message: 'User or product not found.' }, { status: 404 })

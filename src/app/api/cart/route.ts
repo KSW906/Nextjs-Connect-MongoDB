@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/db/dbConnect'
 import Cart from '@/db/models/cart'
-import Product from '@/db/models/product'
 import User from '@/db/models/user'
 import { getSessionUserId } from '@/lib/auth'
+import { ensureProductDocumentById } from '@/lib/products'
 
 type SerializedCartItem = {
   productId: string
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       return userId
     }
 
-    const product = await Product.findOne({ id: productId })
+    const product = await ensureProductDocumentById(productId)
     if (!product) {
       return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })
     }
@@ -133,7 +133,7 @@ export async function PATCH(request: Request) {
       return userId
     }
 
-    const product = await Product.findOne({ id: productId })
+    const product = await ensureProductDocumentById(productId)
     if (!product) {
       return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })
     }
@@ -193,7 +193,7 @@ export async function DELETE(request: Request) {
     if (!productId) {
       cart.items = []
     } else {
-      const product = await Product.findOne({ id: productId })
+      const product = await ensureProductDocumentById(productId)
       if (!product) {
         return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })
       }

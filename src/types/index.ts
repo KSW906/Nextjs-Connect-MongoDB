@@ -53,6 +53,11 @@ export interface WishlistActionResult {
   requiresLogin?: boolean
 }
 
+export interface ProductActionResult {
+  success: boolean
+  message?: string
+}
+
 // Order Types
 export type OrderStatus = 'pending' | 'paid' | 'shipping' | 'delivered' | 'cancelled'
 export type PaymentMethod = 'card' | 'transfer' | 'kakaopay'
