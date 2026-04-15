@@ -276,7 +276,15 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    const { orderId, status, cancelReason = '', trackingNumber = '', courier = '', refundStatus, memo } = body as {
+    const {
+      orderId,
+      status,
+      cancelReason = '',
+      trackingNumber = '',
+      courier = '',
+      refundStatus,
+      memo,
+    } = body as {
       orderId?: string
       status?: OrderStatus
       cancelReason?: string

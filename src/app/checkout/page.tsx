@@ -121,12 +121,7 @@ export default function CheckoutPage() {
               </div>
               <div>
                 <Label htmlFor="zipcode">우편번호</Label>
-                <Input
-                  id="zipcode"
-                  value={zipcode}
-                  onChange={(e) => setZipcode(e.target.value)}
-                  placeholder="12345"
-                />
+                <Input id="zipcode" value={zipcode} onChange={(e) => setZipcode(e.target.value)} placeholder="12345" />
               </div>
               <div>
                 <Label htmlFor="address">주소</Label>

@@ -62,9 +62,7 @@ const productSchema = new mongoose.Schema(
   }
 )
 
-const Product =
-  mongoose.models.ProductForSeed ||
-  mongoose.model('ProductForSeed', productSchema)
+const Product = mongoose.models.ProductForSeed || mongoose.model('ProductForSeed', productSchema)
 
 async function seedProducts() {
   const uri = readMongoUri()

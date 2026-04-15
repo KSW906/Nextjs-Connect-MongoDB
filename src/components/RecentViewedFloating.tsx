@@ -97,7 +97,9 @@ function RecentViewedPanel({
             type="button"
             onClick={() => onSortChange('price-desc')}
             className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
-              sortMode === 'price-desc' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              sortMode === 'price-desc'
+                ? 'bg-emerald-100 text-emerald-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             가격 높은순
@@ -106,7 +108,9 @@ function RecentViewedPanel({
             type="button"
             onClick={() => onSortChange('price-asc')}
             className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
-              sortMode === 'price-asc' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              sortMode === 'price-asc'
+                ? 'bg-emerald-100 text-emerald-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             가격 낮은순
@@ -255,11 +259,11 @@ export function RecentViewedFloating() {
           )}
 
           {isDesktopOpen && (
-            <aside className="w-44 overflow-hidden rounded-2xl border border-emerald-100 bg-white/92 shadow-2xl backdrop-blur">
+            <aside className="bg-white/92 w-44 overflow-hidden rounded-2xl border border-emerald-100 shadow-2xl backdrop-blur">
               <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-br from-emerald-50 to-white px-3 py-2.5">
                 <div>
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900">
-                      <Clock3 className="h-3.5 w-3.5" />
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900">
+                    <Clock3 className="h-3.5 w-3.5" />
                     최근 본 상품
                   </p>
                   <p className="mt-1 text-xs text-gray-500">

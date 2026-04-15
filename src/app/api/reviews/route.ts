@@ -68,10 +68,7 @@ export async function GET(request: NextRequest) {
       query.product = product._id
     }
 
-    const reviews = await Review.find(query)
-      .populate('user')
-      .populate('product')
-      .sort({ createdAt: -1 })
+    const reviews = await Review.find(query).populate('user').populate('product').sort({ createdAt: -1 })
 
     return NextResponse.json(
       {
@@ -99,7 +96,10 @@ export async function POST(request: Request) {
     const { productId, rating, content } = body
 
     if (!productId || typeof rating !== 'number' || !content?.trim()) {
-      return NextResponse.json({ success: false, message: 'productId, rating and content are required.' }, { status: 400 })
+      return NextResponse.json(
+        { success: false, message: 'productId, rating and content are required.' },
+        { status: 400 }
+      )
     }
 
     const user = await User.findById(userId)

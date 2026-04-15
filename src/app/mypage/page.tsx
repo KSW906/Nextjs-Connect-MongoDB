@@ -54,11 +54,7 @@ export default function MyPage() {
   const userReviews = reviews.filter((r) => r.userId === user.id)
 
   const purchasedProducts = Array.from(
-    new Set(
-      userOrders
-        .filter((o) => o.status !== 'cancelled')
-        .flatMap((o) => o.items.map((item) => item.productId))
-    )
+    new Set(userOrders.filter((o) => o.status !== 'cancelled').flatMap((o) => o.items.map((item) => item.productId)))
   )
     .map((id) => products.find((p) => p.id === id))
     .filter((p): p is import('@/types').Product => p !== undefined)
@@ -187,16 +183,14 @@ export default function MyPage() {
         <Tabs defaultValue="my-plants" className="w-full">
           <TabsList className="mb-8 grid w-full grid-cols-5">
             <TabsTrigger value="my-plants" className="gap-2">
-              <Leaf className="h-4 w-4" />
-              내 식물
+              <Leaf className="h-4 w-4" />내 식물
             </TabsTrigger>
             <TabsTrigger value="orders" className="gap-2">
               <Package className="h-4 w-4" />
               주문내역
             </TabsTrigger>
             <TabsTrigger value="wishlist" className="gap-2">
-              <Heart className="h-4 w-4" />
-              찜 목록
+              <Heart className="h-4 w-4" />찜 목록
             </TabsTrigger>
             <TabsTrigger value="reviews" className="gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -234,7 +228,11 @@ export default function MyPage() {
                       <p className="mb-4 line-clamp-2 whitespace-pre-line text-sm text-gray-600">
                         {product.careInstructions || '매주 1회 흙이 마르면 물을 흠뻑 주세요.'}
                       </p>
-                      <Button variant="outline" className="mt-auto w-full" onClick={() => router.push(`/product/${product.id}`)}>
+                      <Button
+                        variant="outline"
+                        className="mt-auto w-full"
+                        onClick={() => router.push(`/product/${product.id}`)}
+                      >
                         상세 정보 보기
                       </Button>
                     </CardContent>
@@ -271,7 +269,9 @@ export default function MyPage() {
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="mb-2 text-lg">주문번호: {order.id}</CardTitle>
-                            <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString('ko-KR')}</p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(order.createdAt).toLocaleDateString('ko-KR')}
+                            </p>
                           </div>
                           {getStatusBadge(order.status)}
                         </div>
@@ -468,10 +468,20 @@ export default function MyPage() {
                                   </>
                                 ) : (
                                   <>
-                                    <Button variant="ghost" size="sm" onClick={() => void handleSaveReview()} disabled={isSavingReview}>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => void handleSaveReview()}
+                                      disabled={isSavingReview}
+                                    >
                                       {isSavingReview ? '저장 중...' : '저장'}
                                     </Button>
-                                    <Button variant="ghost" size="sm" onClick={resetReviewEdit} disabled={isSavingReview}>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={resetReviewEdit}
+                                      disabled={isSavingReview}
+                                    >
                                       취소
                                     </Button>
                                   </>

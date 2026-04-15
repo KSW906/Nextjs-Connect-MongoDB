@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
@@ -66,7 +66,7 @@ export function Header() {
           <div className="hidden items-center gap-4 md:flex">
             {user ? (
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium mr-2">{user.name}님 환영합니다</span>
+                <span className="mr-2 text-sm font-medium">{user.name}님 환영합니다</span>
                 {user.isAdmin && (
                   <Button variant="outline" size="sm" onClick={() => router.push('/admin')}>
                     관리자 페이지
@@ -77,7 +77,12 @@ export function Header() {
                     마이페이지
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                >
                   <LogOut className="mr-1 h-4 w-4" />
                   로그아웃
                 </Button>
@@ -144,7 +149,11 @@ export function Header() {
                           관리자 페이지
                         </Button>
                       )}
-                      <Button variant="ghost" className="justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
+                      <Button
+                        variant="ghost"
+                        className="justify-start text-red-500 hover:bg-red-50 hover:text-red-600"
+                        onClick={handleLogout}
+                      >
                         <LogOut className="mr-2 h-4 w-4" />
                         로그아웃
                       </Button>

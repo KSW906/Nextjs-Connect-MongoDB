@@ -45,9 +45,6 @@ export async function POST(request: Request) {
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : '회원정보 수정 중 오류가 발생했습니다.'
-    return NextResponse.json(
-      { success: false, message },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message }, { status: 500 })
   }
 }

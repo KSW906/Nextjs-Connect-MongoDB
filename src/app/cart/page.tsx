@@ -148,7 +148,9 @@ export default function CartPage() {
                       </div>
 
                       {item.quantity > item.product.stock && (
-                        <p className="mt-2 text-sm text-red-600">재고 부족 상태입니다. 현재 재고: {item.product.stock}개</p>
+                        <p className="mt-2 text-sm text-red-600">
+                          재고 부족 상태입니다. 현재 재고: {item.product.stock}개
+                        </p>
                       )}
                     </div>
 

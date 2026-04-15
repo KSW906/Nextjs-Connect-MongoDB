@@ -68,11 +68,17 @@ function validateProductInput(payload: ProductPayload, requireAllFields: boolean
     }
   }
 
-  if (payload.price !== undefined && (typeof payload.price !== 'number' || Number.isNaN(payload.price) || payload.price < 0)) {
+  if (
+    payload.price !== undefined &&
+    (typeof payload.price !== 'number' || Number.isNaN(payload.price) || payload.price < 0)
+  ) {
     return 'price must be a non-negative number.'
   }
 
-  if (payload.stock !== undefined && (typeof payload.stock !== 'number' || Number.isNaN(payload.stock) || payload.stock < 0)) {
+  if (
+    payload.stock !== undefined &&
+    (typeof payload.stock !== 'number' || Number.isNaN(payload.stock) || payload.stock < 0)
+  ) {
     return 'stock must be a non-negative number.'
   }
 
@@ -83,12 +89,8 @@ function buildProductData(payload: ProductPayload) {
   return {
     ...(payload.name !== undefined ? { name: payload.name.trim() } : {}),
     ...(payload.description !== undefined ? { description: payload.description.trim() } : {}),
-    ...(payload.detailedDescription !== undefined
-      ? { detailedDescription: payload.detailedDescription.trim() }
-      : {}),
-    ...(payload.careInstructions !== undefined
-      ? { careInstructions: payload.careInstructions.trim() }
-      : {}),
+    ...(payload.detailedDescription !== undefined ? { detailedDescription: payload.detailedDescription.trim() } : {}),
+    ...(payload.careInstructions !== undefined ? { careInstructions: payload.careInstructions.trim() } : {}),
     ...(payload.price !== undefined ? { price: payload.price } : {}),
     ...(payload.stock !== undefined ? { stock: payload.stock } : {}),
     ...(payload.category !== undefined ? { category: payload.category.trim() } : {}),
@@ -183,11 +185,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: false, message: 'No fields to update.' }, { status: 400 })
     }
 
-    const updatedProduct = await Product.findOneAndUpdate(
-      { id: payload.id },
-      { $set: update },
-      { new: true }
-    ).lean()
+    const updatedProduct = await Product.findOneAndUpdate({ id: payload.id }, { $set: update }, { new: true }).lean()
 
     if (!updatedProduct) {
       return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })

@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { User } from '../types'
@@ -42,18 +42,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      
+      })
+      const data = await response.json()
+
       if (response.ok && data.success) {
-        setUser(data.user);
-        localStorage.setItem('currentUser', JSON.stringify(data.user));
-        return { success: true };
+        setUser(data.user)
+        localStorage.setItem('currentUser', JSON.stringify(data.user))
+        return { success: true }
       }
-      
-      return { success: false, message: data.message || '이메일 또는 비밀번호가 일치하지 않습니다.' };
+
+      return { success: false, message: data.message || '이메일 또는 비밀번호가 일치하지 않습니다.' }
     } catch (error) {
-      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' };
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
     }
   }
 
@@ -87,22 +87,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, phone }),
-      });
-      const data = await response.json();
-      
+      })
+      const data = await response.json()
+
       if (response.ok && data.success) {
-        setUser(data.user);
-        localStorage.setItem('currentUser', JSON.stringify(data.user));
-        return { success: true };
+        setUser(data.user)
+        localStorage.setItem('currentUser', JSON.stringify(data.user))
+        return { success: true }
       }
-      
-      return { success: false, message: data.message || '회원가입에 실패했습니다.' };
+
+      return { success: false, message: data.message || '회원가입에 실패했습니다.' }
     } catch (error) {
-      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' };
+      return { success: false, message: '서버 통신 중 오류가 발생했습니다.' }
     }
   }
 
-  const updateUser = async (updates: Partial<User> & { password?: string }): Promise<{ success: boolean; message?: string }> => {
+  const updateUser = async (
+    updates: Partial<User> & { password?: string }
+  ): Promise<{ success: boolean; message?: string }> => {
     if (!user) return { success: false, message: '로그인이 필요합니다.' }
 
     try {

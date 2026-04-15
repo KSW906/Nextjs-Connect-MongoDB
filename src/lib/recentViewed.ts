@@ -48,10 +48,10 @@ export function saveRecentViewedProduct(product: Product) {
     viewedAt: new Date().toISOString(),
   }
 
-  const nextItems = [
-    nextItem,
-    ...getRecentViewedProducts().filter((item) => item.id !== product.id),
-  ].slice(0, RECENT_VIEWED_LIMIT)
+  const nextItems = [nextItem, ...getRecentViewedProducts().filter((item) => item.id !== product.id)].slice(
+    0,
+    RECENT_VIEWED_LIMIT
+  )
 
   window.localStorage.setItem(RECENT_VIEWED_STORAGE_KEY, JSON.stringify(nextItems))
   window.dispatchEvent(new Event(RECENT_VIEWED_UPDATED_EVENT))

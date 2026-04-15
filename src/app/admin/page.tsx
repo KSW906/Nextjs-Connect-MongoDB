@@ -168,7 +168,11 @@ export default function AdminPage() {
     setProductCareInstructions(product.careInstructions)
     setProductPrice(product.price.toString())
     setProductStock(product.stock.toString())
-    setProductCategory((PRODUCT_CATEGORIES.includes(product.category as (typeof PRODUCT_CATEGORIES)[number]) ? product.category : '관엽식물') as (typeof PRODUCT_CATEGORIES)[number])
+    setProductCategory(
+      (PRODUCT_CATEGORIES.includes(product.category as (typeof PRODUCT_CATEGORIES)[number])
+        ? product.category
+        : '관엽식물') as (typeof PRODUCT_CATEGORIES)[number]
+    )
     setProductImage(product.image)
     setIsAddDialogOpen(true)
   }
@@ -309,7 +313,12 @@ export default function AdminPage() {
                   <form onSubmit={handleSubmitProduct} className="space-y-4">
                     <div>
                       <Label htmlFor="productName">상품명</Label>
-                      <Input id="productName" value={productName} onChange={(e) => setProductName(e.target.value)} required />
+                      <Input
+                        id="productName"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        required
+                      />
                     </div>
                     <div>
                       <Label htmlFor="productDescription">간단 설명</Label>
@@ -341,16 +350,33 @@ export default function AdminPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="productPrice">가격</Label>
-                        <Input id="productPrice" type="number" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} required min="0" />
+                        <Input
+                          id="productPrice"
+                          type="number"
+                          value={productPrice}
+                          onChange={(e) => setProductPrice(e.target.value)}
+                          required
+                          min="0"
+                        />
                       </div>
                       <div>
                         <Label htmlFor="productStock">재고</Label>
-                        <Input id="productStock" type="number" value={productStock} onChange={(e) => setProductStock(e.target.value)} required min="0" />
+                        <Input
+                          id="productStock"
+                          type="number"
+                          value={productStock}
+                          onChange={(e) => setProductStock(e.target.value)}
+                          required
+                          min="0"
+                        />
                       </div>
                     </div>
                     <div>
                       <Label htmlFor="productCategory">카테고리</Label>
-                      <Select value={productCategory} onValueChange={(value) => setProductCategory(value as (typeof PRODUCT_CATEGORIES)[number])}>
+                      <Select
+                        value={productCategory}
+                        onValueChange={(value) => setProductCategory(value as (typeof PRODUCT_CATEGORIES)[number])}
+                      >
                         <SelectTrigger id="productCategory">
                           <SelectValue />
                         </SelectTrigger>
@@ -446,7 +472,9 @@ export default function AdminPage() {
               ) : (
                 orders.map((order) => {
                   const draft = getOrderDraft(order)
-                  const fullAddress = [order.shippingInfo.address, order.shippingInfo.addressDetail].filter(Boolean).join(' ')
+                  const fullAddress = [order.shippingInfo.address, order.shippingInfo.addressDetail]
+                    .filter(Boolean)
+                    .join(' ')
 
                   return (
                     <Card key={order.id}>
@@ -454,8 +482,12 @@ export default function AdminPage() {
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div>
                             <CardTitle className="mb-2 text-lg">주문번호: {order.orderNumber}</CardTitle>
-                            <p className="mb-1 text-sm text-gray-600">주문일: {new Date(order.createdAt).toLocaleDateString('ko-KR')}</p>
-                            <p className="mb-1 text-sm text-gray-600">수령인: {order.shippingInfo.recipientName} ({order.shippingInfo.phone})</p>
+                            <p className="mb-1 text-sm text-gray-600">
+                              주문일: {new Date(order.createdAt).toLocaleDateString('ko-KR')}
+                            </p>
+                            <p className="mb-1 text-sm text-gray-600">
+                              수령인: {order.shippingInfo.recipientName} ({order.shippingInfo.phone})
+                            </p>
                             <p className="mb-1 text-sm text-gray-600">우편번호: {order.shippingInfo.zipcode || '-'}</p>
                             <p className="text-sm text-gray-600">배송지: {fullAddress || '-'}</p>
                           </div>
@@ -464,7 +496,10 @@ export default function AdminPage() {
                               {getStatusBadge(order.status)}
                               {getRefundBadge(order.refundStatus)}
                             </div>
-                            <Select value={order.status} onValueChange={(value) => void handleUpdateOrderStatus(order, value as Order['status'])}>
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) => void handleUpdateOrderStatus(order, value as Order['status'])}
+                            >
                               <SelectTrigger className="w-36">
                                 <SelectValue />
                               </SelectTrigger>
@@ -484,11 +519,17 @@ export default function AdminPage() {
                           {order.items.map((item) => (
                             <div key={item.productId} className="flex gap-4">
                               <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                                <ImageWithFallback src={item.productImage} alt={item.productName} className="h-full w-full object-cover" />
+                                <ImageWithFallback
+                                  src={item.productImage}
+                                  alt={item.productName}
+                                  className="h-full w-full object-cover"
+                                />
                               </div>
                               <div className="flex-1">
                                 <p className="font-medium">{item.productName}</p>
-                                <p className="text-sm text-gray-600">{item.unitPrice.toLocaleString()}원 x {item.quantity}</p>
+                                <p className="text-sm text-gray-600">
+                                  {item.unitPrice.toLocaleString()}원 x {item.quantity}
+                                </p>
                               </div>
                               <p className="text-sm font-medium text-gray-700">{item.lineTotal.toLocaleString()}원</p>
                             </div>
@@ -498,10 +539,23 @@ export default function AdminPage() {
                         <div className="grid gap-2 rounded-lg border p-4 text-sm text-gray-600 md:grid-cols-2">
                           <p>결제수단: {getPaymentMethodLabel(order.paymentMethod)}</p>
                           <p>결제상태: {order.paymentStatus}</p>
-                          <p>배송 예정일: {order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('ko-KR') : '-'}</p>
-                          <p>배송 시작일: {order.shippedAt ? new Date(order.shippedAt).toLocaleDateString('ko-KR') : '-'}</p>
-                          <p>배송 완료일: {order.deliveredAt ? new Date(order.deliveredAt).toLocaleDateString('ko-KR') : '-'}</p>
-                          <p>환불 완료일: {order.refundedAt ? new Date(order.refundedAt).toLocaleDateString('ko-KR') : '-'}</p>
+                          <p>
+                            배송 예정일:{' '}
+                            {order.estimatedDelivery
+                              ? new Date(order.estimatedDelivery).toLocaleDateString('ko-KR')
+                              : '-'}
+                          </p>
+                          <p>
+                            배송 시작일: {order.shippedAt ? new Date(order.shippedAt).toLocaleDateString('ko-KR') : '-'}
+                          </p>
+                          <p>
+                            배송 완료일:{' '}
+                            {order.deliveredAt ? new Date(order.deliveredAt).toLocaleDateString('ko-KR') : '-'}
+                          </p>
+                          <p>
+                            환불 완료일:{' '}
+                            {order.refundedAt ? new Date(order.refundedAt).toLocaleDateString('ko-KR') : '-'}
+                          </p>
                         </div>
 
                         {(order.shippingInfo.message || order.cancelReason) && (
@@ -540,7 +594,9 @@ export default function AdminPage() {
                             <Label>환불 상태</Label>
                             <Select
                               value={draft.refundStatus}
-                              onValueChange={(value) => updateOrderDraft(order.id, { refundStatus: value as RefundStatus })}
+                              onValueChange={(value) =>
+                                updateOrderDraft(order.id, { refundStatus: value as RefundStatus })
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue />

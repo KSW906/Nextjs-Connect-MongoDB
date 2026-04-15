@@ -100,7 +100,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
             const savedProduct = savedProductsById.get(product.id)
             return savedProduct ? { ...savedProduct, ...product } : product
           }),
-          ...parsedProducts.filter((product: Product) => !mockProducts.some((mockProduct) => mockProduct.id === product.id)),
+          ...parsedProducts.filter(
+            (product: Product) => !mockProducts.some((mockProduct) => mockProduct.id === product.id)
+          ),
         ]
         setProducts(mergedProducts)
         localStorage.setItem('products', JSON.stringify(mergedProducts))
@@ -121,7 +123,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isInitialized || !user?.isAdmin) return
 
-    const customProducts = products.filter((product) => !mockProducts.some((mockProduct) => mockProduct.id === product.id))
+    const customProducts = products.filter(
+      (product) => !mockProducts.some((mockProduct) => mockProduct.id === product.id)
+    )
     const unsyncedProducts = customProducts.filter((product) => !syncedCustomProductIdsRef.current.has(product.id))
 
     if (unsyncedProducts.length === 0) return
@@ -346,7 +350,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok || !data.success) {
         return {
           success: false,
-          message: data.message || (isWishlisted ? '찜 목록에서 제거하지 못했습니다.' : '찜 목록에 추가하지 못했습니다.'),
+          message:
+            data.message || (isWishlisted ? '찜 목록에서 제거하지 못했습니다.' : '찜 목록에 추가하지 못했습니다.'),
         }
       }
 

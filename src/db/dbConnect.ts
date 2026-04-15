@@ -22,9 +22,7 @@ async function dbConnect(): Promise<mongoose.Connection> {
 
   const uri = process.env.MONGODB_URI
   if (!uri) {
-    throw new Error(
-      'Missing MONGODB_URI environment variable. Add it to .env or your deployment environment.'
-    )
+    throw new Error('Missing MONGODB_URI environment variable. Add it to .env or your deployment environment.')
   }
 
   if (!cached.promise) {
