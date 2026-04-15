@@ -5,18 +5,41 @@ import Order from '@/db/models/order'
 import Product from '@/db/models/product'
 import User from '@/db/models/user'
 import { getSessionUserId } from '@/lib/auth'
-import type {
-  Order as OrderType,
-  OrderStatus,
-  PaymentMethod,
-  PaymentStatus,
-  Product as ProductType,
-  RefundStatus,
-} from '@/types'
+import type { Order as OrderType, OrderStatus, PaymentMethod, Product as ProductType, RefundStatus } from '@/types'
+
+type MongoId = {
+  toString(): string
+}
 
 type SessionUser = {
-  _id: { toString(): string }
+  _id: MongoId
   isAdmin?: boolean
+}
+
+type ProductDocument = Omit<ProductType, 'createdAt'> & {
+  createdAt: Date
+}
+
+type OrderItemDocument = {
+  productId: string
+  productName: string
+  productImage: string
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
+type OrderDocument = Omit<OrderType, 'id' | 'userId' | 'createdAt' | 'estimatedDelivery'> & {
+  _id: MongoId
+  user: string | MongoId
+  items: OrderItemDocument[]
+  createdAt: Date
+  estimatedDelivery?: Date | null
+  paidAt?: Date | null
+  shippedAt?: Date | null
+  deliveredAt?: Date | null
+  cancelledAt?: Date | null
+  refundedAt?: Date | null
 }
 
 type PopulatedCartItem = {
@@ -50,7 +73,7 @@ function buildOrderNumber() {
   return `ORD-${yyyy}${mm}${dd}-${random}`
 }
 
-function serializeUpdatedProduct(product: Record<string, any>): ProductType {
+function serializeUpdatedProduct(product: ProductDocument): ProductType {
   return {
     id: product.id,
     name: product.name,
@@ -65,12 +88,12 @@ function serializeUpdatedProduct(product: Record<string, any>): ProductType {
   }
 }
 
-function serializeOrder(order: Record<string, any>): OrderType {
+function serializeOrder(order: OrderDocument): OrderType {
   return {
     id: order._id.toString(),
     orderNumber: order.orderNumber,
     userId: typeof order.user === 'string' ? order.user : order.user.toString(),
-    items: order.items.map((item: any) => ({
+    items: order.items.map((item) => ({
       productId: item.productId,
       productName: item.productName,
       productImage: item.productImage,
@@ -117,7 +140,7 @@ export async function GET() {
     }
 
     const query = user.isAdmin ? {} : { user: user._id }
-    const orders = await Order.find(query).sort({ createdAt: -1 }).lean()
+    const orders = (await Order.find(query).sort({ createdAt: -1 }).lean()) as unknown as OrderDocument[]
 
     return NextResponse.json(
       {
@@ -247,14 +270,14 @@ export async function POST(request: Request) {
     cart.checkedOutAt = new Date()
     await cart.save()
 
-    const updatedProducts = await Product.find({
+    const updatedProducts = (await Product.find({
       _id: { $in: orderItems.map((item) => item.product) },
-    }).lean()
+    }).lean()) as unknown as ProductDocument[]
 
     return NextResponse.json(
       {
         success: true,
-        order: serializeOrder(createdOrder.toObject()),
+        order: serializeOrder(createdOrder.toObject() as OrderDocument),
         cartItems: [],
         updatedProducts: updatedProducts.map((product) => serializeUpdatedProduct(product)),
       },
@@ -378,7 +401,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        order: serializeOrder(order.toObject()),
+        order: serializeOrder(order.toObject() as OrderDocument),
       },
       { status: 200 }
     )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { Suspense, useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ProductCard } from '@/components/ProductCard'
 import { useShop } from '@/context/ShopContext'
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { ImageWithFallback } from '@/components/figma/ImageWithFallback'
 
-export default function HomePage() {
+function HomeContent() {
   const { products } = useShop()
   const searchParams = useSearchParams()
   const [selectedCategory, setSelectedCategory] = useState('전체')
@@ -77,7 +77,7 @@ export default function HomePage() {
         {searchQuery && (
           <div className="mb-6">
             <p className="text-lg">
-              '<span className="font-semibold">{searchQuery}</span>' 검색 결과{' '}
+              &apos;<span className="font-semibold">{searchQuery}</span>&apos; 검색 결과{' '}
               <span className="text-gray-600">({filteredAndSortedProducts.length}개)</span>
             </p>
           </div>
@@ -133,5 +133,13 @@ export default function HomePage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
+      <HomeContent />
+    </Suspense>
   )
 }

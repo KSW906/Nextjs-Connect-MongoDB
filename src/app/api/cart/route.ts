@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import dbConnect from '@/db/dbConnect'
 import Cart from '@/db/models/cart'
 import User from '@/db/models/user'
@@ -45,7 +45,7 @@ async function readCartItems(userId: string): Promise<SerializedCartItem[]> {
     .filter((item: SerializedCartItem | null): item is SerializedCartItem => item !== null)
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await dbConnect()
 

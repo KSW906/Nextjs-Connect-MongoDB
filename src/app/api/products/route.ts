@@ -10,6 +10,10 @@ type SessionUser = {
   isAdmin?: boolean
 }
 
+type ProductDocument = Omit<ProductType, 'createdAt'> & {
+  createdAt: Date
+}
+
 type ProductPayload = {
   id?: string
   name?: string
@@ -32,7 +36,7 @@ async function getSessionUser() {
   return (await User.findById(userId).lean()) as SessionUser | null
 }
 
-function serializeProduct(product: Record<string, any>): ProductType {
+function serializeProduct(product: ProductDocument): ProductType {
   return {
     id: product.id,
     name: product.name,
@@ -102,7 +106,7 @@ export async function GET() {
   try {
     await dbConnect()
 
-    const products = await Product.find({}).sort({ createdAt: -1 }).lean()
+    const products = (await Product.find({}).sort({ createdAt: -1 }).lean()) as unknown as ProductDocument[]
 
     return NextResponse.json(
       {
@@ -133,7 +137,7 @@ export async function POST(request: Request) {
     }
 
     const productId = payload.id?.trim() || Date.now().toString()
-    const createdProduct = await Product.findOneAndUpdate(
+    const createdProduct = (await Product.findOneAndUpdate(
       { id: productId },
       {
         $set: buildProductData(payload),
@@ -146,7 +150,7 @@ export async function POST(request: Request) {
         new: true,
         upsert: true,
       }
-    ).lean()
+    ).lean()) as ProductDocument | null
 
     return NextResponse.json(
       {
@@ -185,7 +189,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: false, message: 'No fields to update.' }, { status: 400 })
     }
 
-    const updatedProduct = await Product.findOneAndUpdate({ id: payload.id }, { $set: update }, { new: true }).lean()
+    const updatedProduct = (await Product.findOneAndUpdate(
+      { id: payload.id },
+      { $set: update },
+      { new: true }
+    ).lean()) as ProductDocument | null
 
     if (!updatedProduct) {
       return NextResponse.json({ success: false, message: 'Product not found.' }, { status: 404 })

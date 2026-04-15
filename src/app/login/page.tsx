@@ -11,6 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+type StoredUser = {
+  email: string
+  isAdmin?: boolean
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const { login, signup } = useAuth()
@@ -62,8 +67,8 @@ export default function LoginPage() {
     if (result.success) {
       // Update to admin
       const usersStr = localStorage.getItem('users')
-      const users = usersStr ? JSON.parse(usersStr) : []
-      const adminUser = users.find((u: any) => u.email === 'admin@plantshop.com')
+      const users = usersStr ? (JSON.parse(usersStr) as StoredUser[]) : []
+      const adminUser = users.find((u) => u.email === 'admin@plantshop.com')
       if (adminUser) {
         adminUser.isAdmin = true
         localStorage.setItem('users', JSON.stringify(users))

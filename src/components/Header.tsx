@@ -1,27 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import { Search, ShoppingCart, User, LogOut, Menu } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Search, ShoppingCart, LogOut, Menu } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useShop } from '../context/ShopContext'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { useState } from 'react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from './ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet'
 
 export function Header() {
   const { user, logout } = useAuth()
   const { cart } = useShop()
   const router = useRouter()
-  const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleSearch = (e: React.FormEvent) => {
